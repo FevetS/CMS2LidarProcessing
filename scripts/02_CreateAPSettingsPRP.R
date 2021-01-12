@@ -268,17 +268,17 @@ writeSection5 <- function(HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS){
 	cat('\n')
 	cat(paste0('ProcessingDirName=', DIRSCRIPTS))
 	cat('\n')
-	cat(paste0('StreamPreprocessBatchFileName=', DIRSCRIPTS, 'preblock.bat'))
+	cat(paste0('StreamPreprocessBatchFileName=', DIRSCRIPTS, '\\', 'preblock.bat'))
 	cat('\n')
-	cat(paste0('PreprocessBatchFileName=', DIRSCRIPTS, 'Basic_setup.bat'))
+	cat(paste0('PreprocessBatchFileName=', DIRSCRIPTS, '\\', 'Basic_setup.bat'))
 	cat('\n')
-	cat(paste0('ProcessingBatchFileName=', DIRSCRIPTS, 'tile.bat'))
+	cat(paste0('ProcessingBatchFileName=', DIRSCRIPTS, '\\', 'tile.bat'))
 	cat('\n')
-	cat(paste0('CleanupBatchFileName=', DIRSCRIPTS, 'posttile.bat'))
+	cat(paste0('CleanupBatchFileName=', DIRSCRIPTS, '\\', 'posttile.bat'))
 	cat('\n')
-	cat(paste0('StreamCleanupBatchFileName=', DIRSCRIPTS, 'postblock.bat'))
+	cat(paste0('StreamCleanupBatchFileName=', DIRSCRIPTS, '\\', 'postblock.bat'))
 	cat('\n')
-	cat(paste0('ProjectionDirName=', DIRSCRIPTS, 'epsg5070.prj'))
+	cat(paste0('ProjectionDirName=', DIRSCRIPTS, '\\', 'epsg5070.prj'))
 	cat('\n')
 	cat('CacheDirName=')
 	cat('\n')
@@ -823,7 +823,7 @@ DIR_BASE = paste0("E:\\CMS2WorkflowTest\\")
 DIR_LIDAR = paste0(DIR_BASE, studyArea, "\\", "Points\\", "LAZ5070\\")
 
 #Where the scripts are
-DIRSCRIPTS = "C:\\Users\\pafekety\\Desktop\\CMS2LidarProcessing\\scripts\\AP\\"
+DIRSCRIPTS = "C:\\Users\\pafekety\\Desktop\\CMS2LidarProcessing\\scripts\\AP" # Do not include the trailing \\
 
 
 createPRP(
