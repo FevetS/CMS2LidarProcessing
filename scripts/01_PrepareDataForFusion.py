@@ -329,6 +329,14 @@ del nCores
 # remove the copy of ╧original LAZs
 shutil.rmtree(dirLAZ)
 
+# Move the Error log
+if os.path.exists(os.path.join(dirLAZ5070, "_Error.log")):
+    # Move the error log
+    shutil.move(
+        os.path.join(dirLAZ5070, "_Error.log"),
+        os.path.join(dirHomeFolder, "_Error.log"),
+    )
+
 
 # creating buffered tiles for DTM
 dirGroundPoints = os.path.join(dirPoints, "Ground")
@@ -477,34 +485,8 @@ with open(fpLidarFilePaths, "w") as f:
 del lidarFile
 
 
-# =============================================================================
-# #Create FUSION Index Files
-# exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
-# lidarFilePaths = [os.path.join(dirLAZ5070, e) for e in lidarFiles]
-# fpCatOut = os.path.join(dirQAQC, "Cat.csv")
-#
-# lidarFilePaths = [os.path.join(dirLAZ5070, e) for e in lidarFiles]
-#
-# def parallelCatalogIndexFile(exeCatalog, lidarFilePath):
-#     # Runs FUSION catalog to create index files
-#     cmdCatalog = exeCatalog + " /index " + lidarFilePath
-#     subprocess.run(cmdCatalog, shell=True)
-#     time.sleep(0.1)
-#
-#
-# start = time.time()
-# if nCoresMax > len(bufferedDTMs):
-#     nCores = len(bufferedDTMs)
-# else:
-#     nCores = nCoresMax
-# Parallel(n_jobs=nCores)(
-#     delayed(parallelCatalogIndexFile)(exeCatalog, lidarFilePath)
-#     for lidarFilePath in lidarFilePaths
-# )
-# =============================================================================
-
 # Run Catalog
-
+print("\nRunning FUSION Catalog\n")
 exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
 lidarFilePaths = [os.path.join(dirLAZ5070, e) for e in lidarFiles]
 
@@ -542,17 +524,10 @@ stop - start
 # parallelProjectFunc() creates a log file if it failed reprojecting a file
 # Notify the user of the error and copy the error log
 
-
-if os.path.exists(os.path.join(dirLAZ5070, "_Error.log")):
+if os.path.exists(os.path.join(dirHomeFolder, "_Error.log")):
     print("\n")
     print("Errors Exist")
 
-    # copy the error log
-    shutil.copy(
-        os.path.join(dirLAZ5070, "_Error.log"),
-        os.path.join(dirHomeFolder, "_Error.log"),
-    )
-
     # Print contents to console
-    with open(os.path.join(dirLAZ5070, "_Error.log")) as f:
+    with open(os.path.join(dirHomeFolder, "_Error.log")) as f:
         print(f.read())
