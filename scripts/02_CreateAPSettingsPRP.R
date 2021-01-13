@@ -32,7 +32,7 @@ Coord.LandTrendr = CRS("+init=epsg:5070")
 fpFUSION = "C:\\FUSION\\"
 
 #Lidar Project Name
-studyArea='CO_GunnisonCo_2016'
+studyArea='CO_ElPasoCoCentral_2018'
 
 #Raster resolution
 CELLSIZE=30
