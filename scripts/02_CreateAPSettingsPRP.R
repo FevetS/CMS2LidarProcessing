@@ -31,6 +31,24 @@ Coord.LandTrendr = CRS("+init=epsg:5070")
 #File path to Fusion Executuables
 fpFUSION = "C:\\FUSION\\"
 
+#Lidar Project Name
+studyArea='CO_GunnisonCo_2016'
+
+#Raster resolution
+CELLSIZE=30
+
+#Maximum number of processing cores
+NCORES=10
+
+#Working directory (same as dirWD in script 01_PrepareDataForFusion.py)
+DIR_BASE = paste0("E:\\CMS2WorkflowTest\\")
+
+#Direcotry of lidar data
+DIR_LIDAR = paste0(DIR_BASE, studyArea, "\\", "Points\\", "LAZ5070\\")
+
+#Directory of AP scripts
+DIRSCRIPTS = "C:\\Users\\pafekety\\Desktop\\CMS2LidarProcessing\\scripts\\AP" # Do not include the trailing \\
+
 
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
@@ -268,17 +286,17 @@ writeSection5 <- function(HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS){
 	cat('\n')
 	cat(paste0('ProcessingDirName=', DIRSCRIPTS))
 	cat('\n')
-	cat(paste0('StreamPreprocessBatchFileName=', DIRSCRIPTS, 'preblock.bat'))
+	cat(paste0('StreamPreprocessBatchFileName=', DIRSCRIPTS, '\\', 'preblock.bat'))
 	cat('\n')
-	cat(paste0('PreprocessBatchFileName=', DIRSCRIPTS, 'Basic_setup.bat'))
+	cat(paste0('PreprocessBatchFileName=', DIRSCRIPTS, '\\', 'Basic_setup.bat'))
 	cat('\n')
-	cat(paste0('ProcessingBatchFileName=', DIRSCRIPTS, 'tile.bat'))
+	cat(paste0('ProcessingBatchFileName=', DIRSCRIPTS, '\\', 'tile.bat'))
 	cat('\n')
-	cat(paste0('CleanupBatchFileName=', DIRSCRIPTS, 'posttile.bat'))
+	cat(paste0('CleanupBatchFileName=', DIRSCRIPTS, '\\', 'posttile.bat'))
 	cat('\n')
-	cat(paste0('StreamCleanupBatchFileName=', DIRSCRIPTS, 'postblock.bat'))
+	cat(paste0('StreamCleanupBatchFileName=', DIRSCRIPTS, '\\', 'postblock.bat'))
 	cat('\n')
-	cat(paste0('ProjectionDirName=', DIRSCRIPTS, 'epsg5070.prj'))
+	cat(paste0('ProjectionDirName=', DIRSCRIPTS, '\\', 'epsg5070.prj'))
 	cat('\n')
 	cat('CacheDirName=')
 	cat('\n')
@@ -813,19 +831,6 @@ createPRP <- function(studyArea, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LID
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
 
-#studyArea="CO_Eastern_South_Priority2_2018"
-
-studyArea='CO_ElPasoCoCentral_2018'
-CELLSIZE=30
-
-NCORES=10
-DIR_BASE = paste0("E:\\CMS2WorkflowTest\\")
-DIR_LIDAR = paste0(DIR_BASE, studyArea, "\\", "Points\\", "LAZ5070\\")
-
-#Where the scripts are
-DIRSCRIPTS = "C:\\Users\\pafekety\\Desktop\\CMS2LidarProcessing\\scripts\\AP\\"
-
-
 createPRP(
   studyArea=studyArea, 
   cellSize=CELLSIZE, 
@@ -835,7 +840,6 @@ createPRP(
   DIR_LIDAR, 
   fpFUSION
 )
-#studyArea=studyArea; cellSize=CELLSIZE; nCores=NCORES; DIR_BASE=DIR_BASE
 
 
 
