@@ -1,4 +1,4 @@
-REM **************************************************************************************************************
+☺REM **************************************************************************************************************
 REM *****             setup batch file used in conjunction with FUSION's AreaProcessor tool                  *****
 REM *****                                                                                                    *****
 REM *****     Used to set up folder structure for data and variables to control run for producing output     *****
@@ -53,7 +53,7 @@ REM Set variables to control merging of block outputs after all processing is co
 REM In general, we merge 30m metrics and other products using larger cells and do not merge any of the high-resolution outputs. If the area is small,
 REM you can probably merge the high-resolution products.
 SET MERGEBLOCKMETRICS=TRUE
-SET MERGEBLOCKCANOPY=TRUE
+SET MERGEBLOCKCANOPY=FALSE
 SET MERGEBLOCKGROUND=FALSE
 SET MERGEBLOCKTOPOMETRICS=TRUE
 
