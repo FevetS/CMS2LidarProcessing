@@ -1,4 +1,4 @@
-☺REM **************************************************************************************************************
+REM **************************************************************************************************************
 REM *****             setup batch file used in conjunction with FUSION's AreaProcessor tool                  *****
 REM *****                                                                                                    *****
 REM *****     Used to set up folder structure for data and variables to control run for producing output     *****
