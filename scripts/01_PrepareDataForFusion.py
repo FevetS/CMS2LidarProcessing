@@ -254,6 +254,17 @@ def parallelClipDTM(fpClipDTM, bufferedDTM, dirInDTM, dirOutDTM):
     time.sleep(0.1)
 
 
+def calcNCores(x, nCoresMax):
+    # Calculates the number of cores that should be dedicated to parallel processes
+    # x (list) object whose length will be compared
+    # nCoresMax (int) - maximum number of processing cores available
+    if nCoresMax > len(x):
+        nCores = len(x)
+    else:
+        nCores = nCoresMax
+    return nCores
+
+
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # Processing
@@ -297,10 +308,7 @@ dirLidar = os.path.join(dirPoints, "LAZ5070")
 if not os.path.exists(dirLidar):
     os.mkdir(dirLidar)
 
-if nCoresMax > len(lidarFiles):
-    nCores = len(lidarFiles)
-else:
-    nCores = nCoresMax
+nCores = calcNCores(lidarFiles, nCoresMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelProjectFunc)(lidarFile, dirData, dirLidar, srsIn)
     for lidarFile in lidarFiles
@@ -327,10 +335,7 @@ lidarFiles5070 = os.listdir(dirLidar)
 if not os.path.exists(dirLidar):
     os.mkdir(dirLidar)
 
-if nCoresMax > len(lidarFiles5070):
-    nCores = len(lidarFiles5070)
-else:
-    nCores = nCoresMax
+nCores = calcNCores(lidarFiles5070, nCoresMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelExtractGndRtns)(lidarFile, dirLidar, dirGroundPoints, dirLASTools)
     for lidarFile in lidarFiles5070
@@ -339,10 +344,8 @@ del nCores
 
 
 lidarFilesGround = os.listdir(dirGroundPoints)
-if nCoresMax > len(lidarFilesGround):
-    nCores = len(lidarFilesGround)
-else:
-    nCores = nCoresMax
+
+nCores = calcNCores(lidarFilesGround, nCoresMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelLastoolsIndex)(lidarFile, dirGroundPoints, dirLASTools)
     for lidarFile in lidarFilesGround
@@ -355,10 +358,7 @@ dirLasTile = os.path.join(dirPoints, "GroundTiles")
 if not os.path.exists(dirLasTile):
     os.mkdir(dirLasTile)
 
-if nCoresMax > len(lidarFilesGround):
-    nCores = len(lidarFilesGround)
-else:
-    nCores = nCoresMax
+nCores = calcNCores(lidarFilesGround, nCoresMax)
 cmdLasTile = (
     exeLasTile
     + " -i "
@@ -374,10 +374,7 @@ del nCores
 
 # Index tiles of buffered ground points
 lidarFilesBufferedGround = os.listdir(dirLasTile)
-if nCoresMax > len(lidarFilesBufferedGround):
-    nCores = len(lidarFilesBufferedGround)
-else:
-    nCores = nCoresMax
+nCores = calcNCores(lidarFilesBufferedGround, nCoresMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelLastoolsIndex)(lidarFile, dirLasTile, dirLASTools)
     for lidarFile in lidarFilesBufferedGround
@@ -404,10 +401,7 @@ for e in lidarFilesGroundTilesTemp:
         lidarFilesGroundTiles.append(e)
 del lidarFilesGroundTilesTemp
 
-if nCoresMax > len(lidarFilesGroundTiles):
-    nCores = len(lidarFilesGroundTiles)
-else:
-    nCores = nCoresMax
+nCores = calcNCores(lidarFilesGroundTiles, nCoresMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelBlast2Dem)(lidarFile, dirLasTile, dirBufferDTM, dirLASTools)
     for lidarFile in lidarFilesGroundTiles
@@ -428,11 +422,7 @@ bufferedDTMs = os.listdir(dirBufferDTM)
 dirInDTM = dirBufferDTM
 dirOutDTM = dirClipDTM
 
-
-if nCoresMax > len(bufferedDTMs):
-    nCores = len(bufferedDTMs)
-else:
-    nCores = nCoresMax
+nCores = calcNCores(bufferedDTMs, nCoresMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelClipDTM)(exeClipDTM, bufferedDTM, dirInDTM, dirOutDTM)
     for bufferedDTM in bufferedDTMs
