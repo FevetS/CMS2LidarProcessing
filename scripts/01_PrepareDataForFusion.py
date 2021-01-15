@@ -37,24 +37,13 @@ import subprocess
 # -----------------------------------------------------------------------------
 start = time.time()
 
-# Lidar projects that need to be processed.
-projects = [
-    "CO_Eastern_South_Priority2_2018",  # pass
-    "CO_ElPasoCoCentral_2018",  # fail Unable to fetch data and convert as requested: ScanAngleRank:float(189.432) -> signed char
-    # Looks like it is caused by a bad LAS file: LD31261359.las and LD31291374.las
-    "CO_ElPasoCoSouth_2018",  # pass
-    "CO_GunnisonCo_2016",  # pass
-    "CO_HuerfanoCo_2018",  # pass
-    "CO_Southwest_NRCS_B3_2018",  # pass
-]
-
 # Assign a project
-project = projects[1]
+project = "CO_Eastern_South_Priority2_2018"
+
 print(project)
 
-# external HHD
+# Directory of lidar data needing to be processed external HHD
 dirData = os.path.join(r"F:\Lidar", project, "Points", "LAZ")
-
 
 # Lastools Binaries
 dirLASTools = r"F:\LAStools\bin"
@@ -62,20 +51,16 @@ dirLASTools = r"F:\LAStools\bin"
 # FUSION directory
 dirFUSION = r"c:\Fusion"
 
-
 # Maximum number of processing cores
-# AZAD: 10
-# DENALI: 28
 nCoresMax = 12
 
-
 # main output directory
-dirWD = r"E:\CMS2WorkflowTest"
-if not os.path.exists(dirWD):
-    os.mkdir(dirWD)
+dirBase = r"E:\LidarProcessing"
+if not os.path.exists(dirBase):
+    os.mkdir(dirBase)
 
 # directory for the specific lidar project; HOME_FOLDER in FUSION scripts
-dirHomeFolder = os.path.join(dirWD, project)
+dirHomeFolder = os.path.join(dirBase, project)
 if not os.path.exists(dirHomeFolder):
     os.mkdir(dirHomeFolder)
 
@@ -163,13 +148,9 @@ dictSRS = {
 # -----------------------------------------------------------------------------
 
 # "parallel" functions are used with joblib
-
-
-def parallelProjectFunc(lidarFile, dirData, dirLAZ5070, srsIn):
+def parallelProjectFunc(lidarFile, dirData, dirLidar, srsIn):
     # Used to project the laz files to EPSG 5070
-
-    # lidarFile2 = lidarFile[:-4] + ".las"  # testing if las or laz is faster
-    lasfile5070 = os.path.join(dirLAZ5070, lidarFile)
+    lasfile5070 = os.path.join(dirLidar, lidarFile)
 
     # pipepline depending if the CRS is defined
     if srsIn == None:
@@ -219,7 +200,7 @@ def parallelProjectFunc(lidarFile, dirData, dirLAZ5070, srsIn):
         pipeline.execute()
     except Exception as err:
         # Write and error file
-        fpErrorLog = os.path.join(dirLAZ5070, "_Error.log")
+        fpErrorLog = os.path.join(dirLidar, "_Error.log")
         cmdError1 = "echo " + "PDAL Reprojection Error " + " >> " + fpErrorLog
         cmdError2 = "echo " + "Check " + lidarFile + " >> " + fpErrorLog
         cmdError3 = "echo " + str(err) + " >> " + fpErrorLog
@@ -230,9 +211,9 @@ def parallelProjectFunc(lidarFile, dirData, dirLAZ5070, srsIn):
     time.sleep(0.01)
 
 
-def parallelExtractGndRtns(lidarFile, dirLAZ5070, dirGroundPoints, dirLASTools):
+def parallelExtractGndRtns(lidarFile, dirLidar, dirGroundPoints, dirLASTools):
     # Used to create LAZ files of ground points
-    fpLidarIn = os.path.join(dirLAZ5070, lidarFile)
+    fpLidarIn = os.path.join(dirLidar, lidarFile)
     fpLidarOut = os.path.join(dirGroundPoints, lidarFile)
     exeLas2Las = os.path.join(dirLASTools, "las2las.exe")
     cmdLas2Las = exeLas2Las + " -i " + fpLidarIn + " -keep_class 2 8 -o " + fpLidarOut
@@ -279,7 +260,7 @@ def parallelClipDTM(fpClipDTM, bufferedDTM, dirInDTM, dirOutDTM):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-# test set of lidar files
+# Lidar files to be processed
 lidarFiles = os.listdir(dirData)
 lidarFiles.sort()
 
@@ -312,16 +293,16 @@ else:
     srsIn = None
 
 
-dirLAZ5070 = os.path.join(dirPoints, "LAZ5070")
-if not os.path.exists(dirLAZ5070):
-    os.mkdir(dirLAZ5070)
+dirLidar = os.path.join(dirPoints, "LAZ5070")
+if not os.path.exists(dirLidar):
+    os.mkdir(dirLidar)
 
 if nCoresMax > len(lidarFiles):
     nCores = len(lidarFiles)
 else:
     nCores = nCoresMax
 Parallel(n_jobs=nCores)(
-    delayed(parallelProjectFunc)(lidarFile, dirData, dirLAZ5070, srsIn)
+    delayed(parallelProjectFunc)(lidarFile, dirData, dirLidar, srsIn)
     for lidarFile in lidarFiles
 )
 del nCores
@@ -330,11 +311,10 @@ del nCores
 shutil.rmtree(dirLAZ)
 
 # Move the Error log
-if os.path.exists(os.path.join(dirLAZ5070, "_Error.log")):
+if os.path.exists(os.path.join(dirLidar, "_Error.log")):
     # Move the error log
     shutil.move(
-        os.path.join(dirLAZ5070, "_Error.log"),
-        os.path.join(dirHomeFolder, "_Error.log"),
+        os.path.join(dirLidar, "_Error.log"), os.path.join(dirHomeFolder, "_Error.log"),
     )
 
 
@@ -343,16 +323,16 @@ dirGroundPoints = os.path.join(dirPoints, "Ground")
 if not os.path.exists(dirGroundPoints):
     os.mkdir(dirGroundPoints)
 
-lidarFiles5070 = os.listdir(dirLAZ5070)
-if not os.path.exists(dirLAZ5070):
-    os.mkdir(dirLAZ5070)
+lidarFiles5070 = os.listdir(dirLidar)
+if not os.path.exists(dirLidar):
+    os.mkdir(dirLidar)
 
 if nCoresMax > len(lidarFiles5070):
     nCores = len(lidarFiles5070)
 else:
     nCores = nCoresMax
 Parallel(n_jobs=nCores)(
-    delayed(parallelExtractGndRtns)(lidarFile, dirLAZ5070, dirGroundPoints, dirLASTools)
+    delayed(parallelExtractGndRtns)(lidarFile, dirLidar, dirGroundPoints, dirLASTools)
     for lidarFile in lidarFiles5070
 )
 del nCores
@@ -480,7 +460,7 @@ if not os.path.exists(dirQAQC):
 fpLidarFilePaths = os.path.join(dirQAQC, "lidarFiles.txt")
 with open(fpLidarFilePaths, "w") as f:
     for lidarFile in lidarFiles5070:
-        f.write(os.path.join(dirLAZ5070, lidarFile))
+        f.write(os.path.join(dirLidar, lidarFile))
         f.write("\n")
 del lidarFile
 
@@ -488,7 +468,7 @@ del lidarFile
 # Run Catalog
 print("\nRunning FUSION Catalog\n")
 exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
-lidarFilePaths = [os.path.join(dirLAZ5070, e) for e in lidarFiles]
+lidarFilePaths = [os.path.join(dirLidar, e) for e in lidarFiles]
 
 fpQAQCOut = os.path.join(dirQAQC, "QAQC.csv")
 cmdCatalog = (
