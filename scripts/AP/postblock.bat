@@ -110,3 +110,8 @@ REM Move the Tile Logs
 MOVE %WORKINGDIRNAME%\TILELOGS %LOGDIR%
 REM Move the Block Logs
 MOVE %WORKINGDIRNAME%\%RUNIDENTIFIER%_*.* %LOGDIR%\MERGELOGS
+
+
+REM PAF 2021.01.15
+REM Create text file signifying the processing is complete
+ECHO completed %AP_RUNDATE%> %WORKINGDIRNAME%\complete.txt

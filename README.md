@@ -19,23 +19,30 @@ The FUSION Processing Scripts. Edit these at your own risk.
 This script calls LASTools and FUSION.  
 User needs to edit the following:  
 - `project` - the name of the lidar project
-- `dirData` - file path to the lidar data
+- `dirData` - file path to the input lidar data
 - `dirLASTools` - file path to LASTools executables
 - `dirFUSION` - file path to FUSION executables
 - `nCoresMax` - maximum number of processing cores available
-- `dirWD` - main output directory
+- `dirBase` - main output directory
 
 ### `scripts/02_CreateAPSettingsPRP.R`  
 This script calls FUSION.  
 User needs to edit the following:  
-- `Coord.LandTrendr` - Spatial refernce system of the lidar files
-- `fpFUSION` - file path to FUSION executables
-- `studyArea` - the name of the lidar project
+- `SRS.Lidar` - Spatial refernce system of the lidar files
+- `dirFUSION` - file path to FUSION executables
+- `project` - the name of the lidar project
 - `CELLSIZE` - Spatial resolution of the FUSION products
-- `NCORES` - maximum number of processing cores available
-- `DIR_BASE` - main output directory (same as `dirWD` in `01_PrepareDataForFusion.py`)
+- `NCORESMAX` - maximum number of processing cores available
+- `DIR_BASE` - main output directory
 - `DIR_LIDAR` - directory of the lidar files projected in `01_PrepareDataForFusion.py`
-- `DIRSCRIPTS` - directory of the FUSION AreaProcessor scripts (these scripts are found in `scripts/AP`)
+- `DIRSCRIPTS` - directory of the FUSION AreaProcessor scripts (these scripts are found in `scripts/AP`)  
+
+### `scripts/03_CreateGriddedMetrics.py`
+This script calls FUSION.  
+User needs to edit the following:  
+- `project` - the name of the lidar project
+- `dirBase` - main output directory
+- `dirFinalProducts` - directory where the final products should be saved  
 
 
 ## Usage  
@@ -43,5 +50,5 @@ Setup workflow.
 Run `scripts/01_PrepareDataForFusion.py` and `scripts/02_CreateAPSettingsPRP.R`.  
 The output of `scripts/02_CreateAPSettingsPRP.R` is a PRP file that is used to set up the FUSION processing run.  
 Open the FUSION program `AreaProcessor.exe` and load the PRP file. Create the processing layout. Create the processing scripts.  
-Run the batch file create in `[DIR_BASE]\[studyArea]\Processing\AP\APFusion.bat`.
+Run `scripts/03_CreateGriddedMetrics.py`. This script runs the batch file created in `[DIR_BASE]/[studyArea]/Processing/AP/APFusion.bat`, cleans the FUSION grids, and copies various products to a user-specified directory.
 
