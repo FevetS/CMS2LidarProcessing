@@ -49,7 +49,7 @@ dirData = os.path.join(r"F:\Lidar", project, "Points", "LAZ")
 dirLASTools = r"F:\LAStools\bin"
 
 # FUSION directory
-dirFUSION = r"c:\Fusion"
+dirFUSION = r"C:\Fusion"
 
 # Maximum number of processing cores
 nCoresMax = 12
@@ -148,7 +148,7 @@ dictSRS = {
 # -----------------------------------------------------------------------------
 
 # "parallel" functions are used with joblib
-def parallelProjectFunc(lidarFile, dirData, dirLidar, srsIn):
+def parallelProjectFunc(lidarFile, dirLAZ, dirLidar, srsIn):
     # Used to project the laz files to EPSG 5070
     lasfile5070 = os.path.join(dirLidar, lidarFile)
 
@@ -156,7 +156,7 @@ def parallelProjectFunc(lidarFile, dirData, dirLidar, srsIn):
     if srsIn == None:
         # The SRS is in the lidar file
         reprojectPipeline = [
-            {"filename": os.path.join(dirData, lidarFile), "type": "readers.las",},
+            {"filename": os.path.join(dirLAZ, lidarFile), "type": "readers.las",},
             {"type": "filters.reprojection", "out_srs": "EPSG:5070",},
             {
                 "type": "writers.las",
@@ -174,7 +174,7 @@ def parallelProjectFunc(lidarFile, dirData, dirLidar, srsIn):
         # Explicitly define SRS
         reprojectPipeline = [
             {
-                "filename": os.path.join(dirData, lidarFile),
+                "filename": os.path.join(dirLAZ, lidarFile),
                 "type": "readers.las",
                 "spatialreference": "EPSG:" + str(srsIn),
             },
@@ -310,7 +310,7 @@ if not os.path.exists(dirLidar):
 
 nCores = calcNCores(lidarFiles, nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelProjectFunc)(lidarFile, dirData, dirLidar, srsIn)
+    delayed(parallelProjectFunc)(lidarFile, dirLAZ, dirLidar, srsIn)
     for lidarFile in lidarFiles
 )
 del nCores
