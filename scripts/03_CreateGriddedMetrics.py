@@ -185,6 +185,27 @@ cleanGrids(
 
 
 # -----------------------------------------------------------------------------
+# Strata Metrics
+# -----------------------------------------------------------------------------
+
+dirFusionStrataMetrics = os.path.join(dirFusionProducts, "StrataMetrics_30METERS")
+
+rasters = []
+for i in os.listdir(dirFusionStrataMetrics):
+    if i.endswith(".asc"):
+        rasters.append(i)
+del i
+
+# file paths to rasters
+fpRasters = [os.path.join(dirFusionStrataMetrics, e) for e in rasters]
+cleanGrids(
+    inFiles=fpRasters,
+    outDir=os.path.join(dirOutMetrics, "StrataMetrics"),
+    fpElev=fpElev,
+)
+
+
+# -----------------------------------------------------------------------------
 # Intensity Metrics
 # -----------------------------------------------------------------------------
 
