@@ -38,24 +38,24 @@ import subprocess
 start = time.time()
 
 # Assign a project
-project = "CO_Eastern_South_Priority2_2018"
+project = "CO_ARRA_ParkCo_2010"
 
 print(project)
 
 # Directory of lidar data needing to be processed external HHD
-dirData = os.path.join(r"F:\Lidar", project, "Points", "LAZ")
+dirData = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
 
 # Lastools Binaries
-dirLASTools = r"F:\LAStools\bin"
+dirLASTools = r"C:\LAStools\bin"
 
 # FUSION directory
 dirFUSION = r"C:\Fusion"
 
 # Maximum number of processing cores
-nCoresMax = 12
+nCoresMax = 20
 
 # main output directory
-dirBase = r"E:\LidarProcessing"
+dirBase = r"D:\LidarProcessingTest"
 if not os.path.exists(dirBase):
     os.mkdir(dirBase)
 
@@ -78,67 +78,67 @@ if not os.path.exists(dirHomeFolder):
 
 # Spatial Reference Systems of different project areas
 dictSRS = {
-    #"CO_ARRA_GrandCo_2010": 3743,
-    #"CO_ARRA_LarimerCo_2010": 3743,
-    #"CO_ARRA_ParkCo_2010": 3743,
-    #"CO_ArapahoeCo_2018": 6428,
-    #"CO_ArkansasValley_2010": 3743,
-    #"CO_BoulderCreekCZOSnowOff_2010": 26913,
-    #"CO_CentralEasternPlains_1_2020": 6342,
-    #"CO_Central_Western_2016": 6428,
-    #"CO_CheesmanLake_2004": 26913,
-    #"CO_DenverDNC_2008": 26913,
-    #"CO_Denver_2008": 26913,
-    #"CO_Eastern_B1_2018": 6430,
-    #"CO_Eastern_B2_QL1_Central_2018": 6428,
-    #"CO_Eastern_B2_QL2_Central_2018": 6428,
-    #"CO_Eastern_B2_QL2_North_2018": 6430,
-    #"CO_Eastern_B5_2018": 6432,
-    #"CO_Eastern_South_Priority2_2018": 6432,
-    #"CO_ElPasoCoCentral_2018": 6428,
-    #"CO_ElPasoCoSouth_2018": 6432,
-    #"CO_FremontCo_2016": 6428,
-    #"CO_GunnisonCo_2016_LAS": 6342,
-    #"CO_HuerfanoCo_2018": 6432,
-    #"CO_Kremmling_2012": 6342,
-    #"CO_LaPlataCo_CHAMP_2018": 2233,
-    #"CO_LarimerCo_CHAMP_2015": 2231,
-    #"CO_LarimerCo_GlenHaven_2013": 2231,
-    #"CO_LovelandE_2016": 6430,
-    #"CO_LovelandW_2016": 6430,
-    #"CO_MesaCo_QL1_2016": 6342,
-    #"CO_MesaCo_QL2_2015": 6341,
-    #"CO_MesaCo_QL2_UTM13_2015": 6342,
-    #"CO_NESEColorado_1_2019": 6432,
-    #"CO_NESEColorado_2_2019": 6432,
-    #"CO_NESEColorado_3_2019": 6432,
-    #"CO_NiwotRidgeLTER_2005": 26913,
-    #"CO_PitkinCo_2016": 6428,
-    #"CO_PuebloCo_2018": 6432,
-    #"CO_RaleighPeak_2010": 26913,
-    #"CO_RoanPlateauNorth_2007": 32612,
-    #"CO_RoanPlateauSouth_2007": 32612,
-    #"CO_RouttCo_2016": 6430,
-    #"CO_SanIsabelNFDebrisFlow_2008": 26913,
-    #"CO_SanJuan_NF_2017": 6342,
-    #"CO_San_Luis_Valley_2011": 3720,
-    #"CO_SilverPlume_2005": 26913,
-    #"CO_SlumgullionLandslide184_2015": 6342,
-    #"CO_SlumgullionLandslide188_2015": 6342,
-    #"CO_SlumgullionLandslide191_2015": 6342,
-    #"CO_SoPlatteRiver_Lot1_2013": 6342,
-    #"CO_SoPlatteRiver_Lot2a_2013": 6342,
-    #"CO_SoPlatteRiver_Lot5_2013": 6342,
-    #"CO_SoPlatte_Lot3_2013": 6342,
-    #"CO_Southwest_NRCS_B1_2018": 5070,
-    #"CO_Southwest_NRCS_B2_2018": 5070,
-    #"CO_Southwest_NRCS_B3_2018": 5070,
-    #"CO_TellerCo_2016": 6428,
-    #"CO_TellerCo_CHAMP_2014": 2232,
-    #"CO_UCBolderFlatIrons_2010": 26913,
-    #"CO_WestBijouCreek_2007": 26913,
-    #"NM_Animas_2014": 6342,
-    #"NM_Northeast_B5_2018": 6342,
+    # "CO_ARRA_GrandCo_2010": 3743,
+    # "CO_ARRA_LarimerCo_2010": 3743,
+    # "CO_ARRA_ParkCo_2010": 3743,
+    # "CO_ArapahoeCo_2018": 6428,
+    # "CO_ArkansasValley_2010": 3743,
+    # "CO_BoulderCreekCZOSnowOff_2010": 26913,
+    # "CO_CentralEasternPlains_1_2020": 6342,
+    # "CO_Central_Western_2016": 6428,
+    # "CO_CheesmanLake_2004": 26913,
+    # "CO_DenverDNC_2008": 26913,
+    # "CO_Denver_2008": 26913,
+    # "CO_Eastern_B1_2018": 6430,
+    # "CO_Eastern_B2_QL1_Central_2018": 6428,
+    # "CO_Eastern_B2_QL2_Central_2018": 6428,
+    # "CO_Eastern_B2_QL2_North_2018": 6430,
+    # "CO_Eastern_B5_2018": 6432,
+    # "CO_Eastern_South_Priority2_2018": 6432,
+    # "CO_ElPasoCoCentral_2018": 6428,
+    # "CO_ElPasoCoSouth_2018": 6432,
+    # "CO_FremontCo_2016": 6428,
+    # "CO_GunnisonCo_2016_LAS": 6342,
+    # "CO_HuerfanoCo_2018": 6432,
+    # "CO_Kremmling_2012": 6342,
+    # "CO_LaPlataCo_CHAMP_2018": 2233,
+    # "CO_LarimerCo_CHAMP_2015": 2231,
+    # "CO_LarimerCo_GlenHaven_2013": 2231,
+    # "CO_LovelandE_2016": 6430,
+    # "CO_LovelandW_2016": 6430,
+    # "CO_MesaCo_QL1_2016": 6342,
+    # "CO_MesaCo_QL2_2015": 6341,
+    # "CO_MesaCo_QL2_UTM13_2015": 6342,
+    # "CO_NESEColorado_1_2019": 6432,
+    # "CO_NESEColorado_2_2019": 6432,
+    # "CO_NESEColorado_3_2019": 6432,
+    # "CO_NiwotRidgeLTER_2005": 26913,
+    # "CO_PitkinCo_2016": 6428,
+    # "CO_PuebloCo_2018": 6432,
+    # "CO_RaleighPeak_2010": 26913,
+    # "CO_RoanPlateauNorth_2007": 32612,
+    # "CO_RoanPlateauSouth_2007": 32612,
+    # "CO_RouttCo_2016": 6430,
+    # "CO_SanIsabelNFDebrisFlow_2008": 26913,
+    # "CO_SanJuan_NF_2017": 6342,
+    # "CO_San_Luis_Valley_2011": 3720,
+    # "CO_SilverPlume_2005": 26913,
+    # "CO_SlumgullionLandslide184_2015": 6342,
+    # "CO_SlumgullionLandslide188_2015": 6342,
+    # "CO_SlumgullionLandslide191_2015": 6342,
+    # "CO_SoPlatteRiver_Lot1_2013": 6342,
+    # "CO_SoPlatteRiver_Lot2a_2013": 6342,
+    # "CO_SoPlatteRiver_Lot5_2013": 6342,
+    # "CO_SoPlatte_Lot3_2013": 6342,
+    # "CO_Southwest_NRCS_B1_2018": 5070,
+    # "CO_Southwest_NRCS_B2_2018": 5070,
+    # "CO_Southwest_NRCS_B3_2018": 5070,
+    # "CO_TellerCo_2016": 6428,
+    # "CO_TellerCo_CHAMP_2014": 2232,
+    # "CO_UCBolderFlatIrons_2010": 26913,
+    # "CO_WestBijouCreek_2007": 26913,
+    # "NM_Animas_2014": 6342,
+    # "NM_Northeast_B5_2018": 6342,
 }
 
 # -----------------------------------------------------------------------------
@@ -211,16 +211,6 @@ def parallelProjectFunc(lidarFile, dirLAZ, dirLidar, srsIn):
     time.sleep(0.01)
 
 
-def parallelExtractGndRtns(lidarFile, dirLidar, dirGroundPoints, dirLASTools):
-    # Used to create LAZ files of ground points
-    fpLidarIn = os.path.join(dirLidar, lidarFile)
-    fpLidarOut = os.path.join(dirGroundPoints, lidarFile)
-    exeLas2Las = os.path.join(dirLASTools, "las2las.exe")
-    cmdLas2Las = exeLas2Las + " -i " + fpLidarIn + " -keep_class 2 8 -o " + fpLidarOut
-    subprocess.run(cmdLas2Las, shell=True)
-    time.sleep(0.1)
-
-
 def parallelBlast2Dem(lidarFile, dirLasTile, dirDTMBuffer, dirLASTools):
     # Creates .DTM files for ground surfaces
     exeBlast2Dem = os.path.join(dirLASTools, "blast2dem.exe")
@@ -230,15 +220,6 @@ def parallelBlast2Dem(lidarFile, dirLasTile, dirDTMBuffer, dirLASTools):
         exeBlast2Dem + " -i " + fpLidarFile + " -o " + fpDtm + " -odtm -step 1"
     )
     subprocess.run(cmdBlast2Dem)
-    time.sleep(0.1)
-
-
-def parallelLastoolsIndex(lidarFile, dirGroundPoints, dirLASTools):
-    # Used to create LAZ files of ground points
-    fpLidarIn = os.path.join(dirGroundPoints, lidarFile)
-    exeLasIndex = os.path.join(dirLASTools, "lasindex64.exe")
-    cmdLas2Las = exeLasIndex + " -i " + fpLidarIn
-    subprocess.run(cmdLas2Las, shell=True)
     time.sleep(0.1)
 
 
@@ -263,6 +244,51 @@ def calcNCores(x, nCoresMax):
     else:
         nCores = nCoresMax
     return nCores
+
+
+def parallelCreateTIN(dirBufferDTM, lidarFile, dirLasTile, dirFUSION):
+    surfacefile = os.path.join(dirBufferDTM, lidarFile[:-4] + ".dtm")
+    dtmHeader = " 1 m m 0 0 2 3 "
+    dataFile = os.path.join(dirLasTile, lidarFile)
+    cmdFusionTIN = (
+        os.path.join(dirFUSION, "TINSurfaceCreate.exe")
+        + " "
+        + surfacefile
+        + dtmHeader
+        + dataFile
+    )
+    subprocess.run(cmdFusionTIN, shell=True)
+
+
+def parallelReTile(i, extents, dirLasTile, project, dirGroundPoints):
+    A = str(round(extents[i][0]))
+    B = str(round(extents[i][3]))
+    fpCropOut = os.path.join(dirLasTile, project + "_" + A + "_" + B + ".laz")
+
+    cropPipeline = [
+        os.path.join(dirGroundPoints, "*.laz"),
+        {
+            "type": "filters.crop",
+            "bounds": "(" + str(extents[i][0:2]) + "," + str(extents[i][2:4]) + ")",
+        },
+        {"type": "writers.las", "filename": fpCropOut},
+    ]
+    pipeline = pdal.Pipeline(json.dumps(cropPipeline))
+    pipeOut = pipeline.execute()
+    # Delete LAZ if no points were written
+    if pipeOut == 0:
+        os.remove(fpCropOut)
+
+
+def parallelExtractGndRtns(lidarFile, dirLidar, dirGroundPoints):
+    filterPipeline = [
+        os.path.join(dirLidar, lidarFile),
+        {"type": "filters.range", "limits": "Classification[2:2], Classification[8:8]"},
+        {"type": "writers.las", "filename": os.path.join(dirGroundPoints, lidarFile)},
+    ]
+
+    pipeline = pdal.Pipeline(json.dumps(filterPipeline))
+    pipeline.execute()
 
 
 # -----------------------------------------------------------------------------
@@ -316,7 +342,7 @@ Parallel(n_jobs=nCores)(
 del nCores
 
 # remove the copy of ╧original LAZs
-shutil.rmtree(dirLAZ)
+# shutil.rmtree(dirLAZ)
 
 # Move the Error log
 if os.path.exists(os.path.join(dirLidar, "_Error.log")):
@@ -332,12 +358,11 @@ if not os.path.exists(dirGroundPoints):
     os.mkdir(dirGroundPoints)
 
 lidarFiles5070 = os.listdir(dirLidar)
-if not os.path.exists(dirLidar):
-    os.mkdir(dirLidar)
+
 
 nCores = calcNCores(lidarFiles5070, nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelExtractGndRtns)(lidarFile, dirLidar, dirGroundPoints, dirLASTools)
+    delayed(parallelExtractGndRtns)(lidarFile, dirLidar, dirGroundPoints)
     for lidarFile in lidarFiles5070
 )
 del nCores
@@ -345,41 +370,69 @@ del nCores
 
 lidarFilesGround = os.listdir(dirGroundPoints)
 
-nCores = calcNCores(lidarFilesGround, nCoresMax)
-Parallel(n_jobs=nCores)(
-    delayed(parallelLastoolsIndex)(lidarFile, dirGroundPoints, dirLASTools)
-    for lidarFile in lidarFilesGround
-)
-del nCores
 
-# tiles of buffered ground points
-exeLasTile = os.path.join(dirLASTools, "lastile.exe")
+# Find the extent of the lidar collection
+for lidarFile in lidarFilesGround:
+    fpLidarFile = os.path.join(dirGroundPoints, lidarFile)
+    cmdMetadata = "pdal info  " + fpLidarFile + " --metadata"
+    r = subprocess.run(cmdMetadata, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    json_info = json.loads(r.stdout.decode())
+    minx = json_info["metadata"]["minx"]
+    maxx = json_info["metadata"]["maxx"]
+    miny = json_info["metadata"]["miny"]
+    maxy = json_info["metadata"]["maxy"]
+    if lidarFile == lidarFilesGround[0]:
+        minX = minx
+        maxX = maxx
+        minY = miny
+        maxY = maxy
+
+    if minx < minX:
+        minX = minx
+    if maxx > maxX:
+        maxX = maxx
+    if maxy > maxY:
+        maxY = maxy
+    if miny < minY:
+        minY = miny
+del maxx
+del minx
+del maxy
+del miny
+
+
 dirLasTile = os.path.join(dirPoints, "GroundTiles")
 if not os.path.exists(dirLasTile):
     os.mkdir(dirLasTile)
 
-nCores = calcNCores(lidarFilesGround, nCoresMax)
-cmdLasTile = (
-    exeLasTile
-    + " -i "
-    + dirGroundPoints
-    + "\*.laz -merged -tile_size 5000 -buffer 80 -o "
-    + os.path.join(dirLasTile, project)
-    + " -olaz -cores "
-    + str(nCores)
-)
-cmdLasTile
-subprocess.run(cmdLasTile, shell=True)
-del nCores
+
+# Create LAS tiles that are 5160 meters square (5000 meters with a 80 meter buffer)
+tileSize = 3000
+buffer = 80
+nDTMRow = round(abs((minY - maxY) / tileSize) + 0.5)
+nDTMCol = round(abs((minX - maxX) / tileSize) + 0.5)
+
+# Extents for retiled lasfiles
+extents = []
+for i in range(nDTMRow):
+    for j in range(nDTMCol):
+        tileXMin = minX + j * tileSize - buffer
+        tileXMax = minX + j * tileSize + (tileSize + buffer)
+        tileYMin = minY + i * tileSize - buffer
+        tileYMax = minY + i * tileSize + (tileSize + buffer)
+
+        extents.append([tileXMin, tileXMax, tileYMin, tileYMax])
+
 
 # Index tiles of buffered ground points
 lidarFilesBufferedGround = os.listdir(dirLasTile)
-nCores = calcNCores(lidarFilesBufferedGround, nCoresMax)
+nCores = calcNCores(extents, nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelLastoolsIndex)(lidarFile, dirLasTile, dirLASTools)
-    for lidarFile in lidarFilesBufferedGround
+    delayed(parallelReTile)(i, extents, dirLasTile, project, dirGroundPoints)
+    for i in range(len(extents))
 )
 del nCores
+
 
 # ----------------------------------------------------------------------------
 # Create DTMs
@@ -401,9 +454,11 @@ for e in lidarFilesGroundTilesTemp:
         lidarFilesGroundTiles.append(e)
 del lidarFilesGroundTilesTemp
 
+
+# Use FUSION to create DTM from TIN
 nCores = calcNCores(lidarFilesGroundTiles, nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelBlast2Dem)(lidarFile, dirLasTile, dirBufferDTM, dirLASTools)
+    delayed(parallelCreateTIN)(dirBufferDTM, lidarFile, dirLasTile, dirFUSION)
     for lidarFile in lidarFilesGroundTiles
 )
 del nCores
@@ -421,6 +476,7 @@ exeClipDTM = os.path.join(dirFUSION, "ClipDTM.exe")
 bufferedDTMs = os.listdir(dirBufferDTM)
 dirInDTM = dirBufferDTM
 dirOutDTM = dirClipDTM
+
 
 nCores = calcNCores(bufferedDTMs, nCoresMax)
 Parallel(n_jobs=nCores)(
@@ -484,10 +540,6 @@ if not os.path.exists(dirFusionProcessingAP):
     os.mkdir(dirFusionProcessingAP)
 
 
-stop = time.time()
-stop - start
-
-
 # ----------------------------------------------------------------------------
 # Error Checking
 # ----------------------------------------------------------------------------
@@ -501,3 +553,6 @@ if os.path.exists(os.path.join(dirHomeFolder, "_Error.log")):
     # Print contents to console
     with open(os.path.join(dirHomeFolder, "_Error.log")) as f:
         print(f.read())
+
+stop = time.time()
+print(str(round(stop - start) / 60) + " minutes to complete.")

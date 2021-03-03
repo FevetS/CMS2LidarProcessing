@@ -34,14 +34,14 @@ import numpy as np
 start = time.time()
 
 # Assign a project
-project = "CO_Eastern_South_Priority2_2018"
+project = "CO_ARRA_ParkCo_2010"
 print(project)
 
 # main output directory
-dirBase = r"E:\LidarProcessing"
+dirBase = r"D:\LidarProcessingTest"
 
 # directory where the final products should be saved
-dirFinalProducts = r"E:\FusionRuns"
+dirFinalProducts = r"d:\FusionRunsTest"
 if not os.path.exists(dirFinalProducts):
     os.mkdir(dirFinalProducts)
 
