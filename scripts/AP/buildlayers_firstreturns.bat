@@ -76,7 +76,7 @@ IF /I NOT "%OMITINTENSITY%"=="true" (
 	CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 6 FIRST_RETURNS_int_min_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
 	CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 7 FIRST_RETURNS_int_max_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
 	CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 8 FIRST_RETURNS_int_ave_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
-	CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 9 FIRST_RETURNS_int_mode_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
+	::CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 9 FIRST_RETURNS_int_mode_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
 	CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 10 FIRST_RETURNS_int_stddev_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
 	CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 11 FIRST_RETURNS_int_variance_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
 	CALL "%PROCESSINGHOME%\extract_metric" _first_returns_intensity_stats 12 FIRST_RETURNS_int_CV_%MINHTLABEL%plus_%FILEIDENTIFIER% 1
