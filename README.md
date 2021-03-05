@@ -16,11 +16,10 @@ Verify that the file structure of your data is compatible with these scripts.
 The FUSION Processing Scripts. Edit these at your own risk.  
 
 ### `scripts/01_PrepareDataForFusion.py`  
-This script calls LASTools and FUSION.  
+This script calls PDAL and FUSION.  
 User needs to edit the following:  
 - `project` - the name of the lidar project
 - `dirData` - file path to the input lidar data
-- `dirLASTools` - file path to LASTools executables
 - `dirFUSION` - file path to FUSION executables
 - `nCoresMax` - maximum number of processing cores available
 - `dirBase` - main output directory
