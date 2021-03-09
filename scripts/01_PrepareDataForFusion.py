@@ -28,7 +28,9 @@ import json
 import time
 from joblib import Parallel, delayed
 import subprocess
-
+import psutil
+import glob
+import numpy as np
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -52,7 +54,8 @@ dirFUSION = r"C:\Fusion"
 nCoresMax = 28
 
 # Nominal size of the DTM tiles
-DTM_TILESIZE = 5000
+# don't set this too large if you have dense lidar or not a lot of RAM.
+DTM_TILESIZE = 2000
 
 # The amount of buffer to be added to each DTM tile, in each direction
 #  Note that 20 meters will be removed from each edge of the DTM surface.
@@ -236,7 +239,9 @@ def calcNCores(x, nCoresMax):
         nCores = len(x)
     else:
         nCores = nCoresMax
-    return nCores
+    if nCores < 1:
+        nCores = 1
+    return int(nCores)
 
 
 def parallelGridSurfaceCreate(dirBufferDTM, lidarFile, dirLasTile, dirFUSION):
@@ -337,10 +342,35 @@ def parallelRetile(i, dictDtmLidar, dirPoints, dictRetile, dirLasTile):
     B = str(round(dictRetile[i][2]))
     fpCropOut = os.path.join(dirLasTile, project + "_" + A + "_" + B + ".laz")
 
-    # Slowly building the pipeline
-    cropPipeline = fpLidars
-    cropPipeline.append({"type": "filters.merge"})
-    cropPipeline.append(
+    for k in range(len(fpLidars)):
+        fp = fpLidars[k]
+        tempFP = os.path.join(
+            dirLasTile, project + "_" + A + "_" + B + "_" + str(k) + ".laz"
+        )
+        crop3Pipeline = [
+            fp,
+            {
+                "type": "filters.crop",
+                "bounds": "("
+                + str(dictRetile[i][0:2])
+                + ","
+                + str(dictRetile[i][2:4])
+                + ")",
+            },
+            {"type": "writers.las", "filename": tempFP},
+        ]
+        pipeline = pdal.Pipeline(json.dumps(crop3Pipeline))
+        pipeOut = pipeline.execute()
+        if pipeOut == 0:
+            os.remove(tempFP)
+
+    # Merge the temp files back to a single
+    mergePipeline = []
+    for m in glob.glob(
+        os.path.join(dirLasTile, project + "_" + A + "_" + B + "_*.laz")
+    ):
+        mergePipeline.append(m)
+    mergePipeline.append(
         {
             "type": "filters.crop",
             "bounds": "("
@@ -350,12 +380,16 @@ def parallelRetile(i, dictDtmLidar, dirPoints, dictRetile, dirLasTile):
             + ")",
         }
     )
-    cropPipeline.append({"type": "writers.las", "filename": fpCropOut})
-    pipeline = pdal.Pipeline(json.dumps(cropPipeline))
+    mergePipeline.append({"type": "writers.las", "filename": fpCropOut})
+
+    pipeline = pdal.Pipeline(json.dumps(mergePipeline))
     pipeOut = pipeline.execute()
-    # Delete LAZ if no points were written
-    if pipeOut == 0:
-        os.remove(fpCropOut)
+
+    # delete temp files
+    for m in glob.glob(
+        os.path.join(dirLasTile, project + "_" + A + "_" + B + "_*.laz")
+    ):
+        os.remove(m)
 
 
 # -----------------------------------------------------------------------------
@@ -495,21 +529,64 @@ for dtmKey in list(dictRetile.keys()):
 
         if doesIntersects(dictExtents[lidarKey], dictRetile[dtmKey]):
             lidarTiles.append(lidarKey)
-        dictDtmLidar[dtmKey] = lidarTiles
+        if len(lidarTiles) > 0:
+            dictDtmLidar[dtmKey] = lidarTiles
 
 
 dirLasTile = os.path.join(dirPoints, "GroundTiles")
 if not os.path.exists(dirLasTile):
     os.mkdir(dirLasTile)
 
+# total amount of memory
+memoryTotal = psutil.virtual_memory().total
+memoryTotal / 2 ** 30
 
-print("\tCreating Buffered Lidar Tiles for DTM")
-nCores = calcNCores(dictDtmLidar, nCoresMax)
+
+# Memory available
+memoryAvailable = psutil.virtual_memory().available
+memoryAvailable / 2 ** 30
+
+
+# Get file size of the lidar files in each tile
+fileSize = {}
+for dtmLidarKey in list(dictDtmLidar.keys()):
+    dtmLidarKey
+    size = 0
+    for f in dictDtmLidar[dtmLidarKey]:
+        size = size + os.path.getsize(os.path.join(dirPoints, "Ground", f))
+    fileSize[dtmLidarKey] = size
+
+# The DTM tile that will need the largest amount of memory
+memoryMaxNeeded = max(fileSize.values())
+memoryMaxNeeded * 12 / 2 ** 30  # assume a compression factor of 12 and having 1 copy in memory in GB
+
+# Approximate number of cores available
+(memoryAvailable) / (memoryMaxNeeded * 12)
+
+
+# dictionary key with largest memory needed
+list(fileSize.keys())[list(fileSize.values()).index(memoryMaxNeeded)]
+list(fileSize.keys())[list(fileSize.values()).index(min(fileSize.values()))]
+
+
+# Try using 80% of the calculated memory
+tempMax = np.trunc((memoryAvailable) / (memoryMaxNeeded * 12) * 0.8)
+nCores = calcNCores(dictDtmLidar, tempMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelRetile)(i, dictDtmLidar, dirPoints, dictRetile, dirLasTile)
     for i in list(dictDtmLidar.keys())
 )
 del nCores
+del tempMax
+
+
+# print("\tCreating Buffered Lidar Tiles for DTM")
+# nCores = calcNCores(dictDtmLidar, nCoresMax)
+# Parallel(n_jobs=nCores)(
+#     delayed(parallelRetile)(i, dictDtmLidar, dirPoints, dictRetile, dirLasTile)
+#     for i in list(dictDtmLidar.keys())
+# )
+# del nCores
 
 
 # ----------------------------------------------------------------------------
