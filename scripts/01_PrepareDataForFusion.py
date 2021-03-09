@@ -38,21 +38,18 @@ import subprocess
 start = time.time()
 
 # Assign a project
-project = "CO_ARRA_GrandCo_2010"
+project = "CO_Southwest_NRCS_B1_2018"
 
 print(project)
 
 # Directory of lidar data needing to be processed external HHD
-dirData = os.path.join(r"F:\Lidar", project, "Points", "LAZ")
-
-# Lastools Binaries
-# dirLASTools = r"C:\LAStools\bin"
+dirData = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
 
 # FUSION directory
 dirFUSION = r"C:\Fusion"
 
 # Maximum number of processing cores
-nCoresMax = 12
+nCoresMax = 28
 
 # Nominal size of the DTM tiles
 DTM_TILESIZE = 5000
@@ -63,7 +60,7 @@ DTM_TILESIZE = 5000
 DTM_BUFFER = 80
 
 # main output directory
-dirBase = r"E:\LidarProcessing"
+dirBase = r"D:\LidarProcessing"
 if not os.path.exists(dirBase):
     os.mkdir(dirBase)
 
@@ -413,7 +410,7 @@ Parallel(n_jobs=nCores)(
 )
 del nCores
 
-# remove the copy of ╧original LAZs
+# remove the copy of original LAZs
 shutil.rmtree(dirLAZ)
 
 # Move the Error log
