@@ -38,24 +38,32 @@ import subprocess
 start = time.time()
 
 # Assign a project
-project = "CO_ARRA_ParkCo_2010"
+project = "CO_ARRA_GrandCo_2010"
 
 print(project)
 
 # Directory of lidar data needing to be processed external HHD
-dirData = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
+dirData = os.path.join(r"F:\Lidar", project, "Points", "LAZ")
 
 # Lastools Binaries
-dirLASTools = r"C:\LAStools\bin"
+# dirLASTools = r"C:\LAStools\bin"
 
 # FUSION directory
 dirFUSION = r"C:\Fusion"
 
 # Maximum number of processing cores
-nCoresMax = 20
+nCoresMax = 12
+
+# Nominal size of the DTM tiles
+DTM_TILESIZE = 5000
+
+# The amount of buffer to be added to each DTM tile, in each direction
+#  Note that 20 meters will be removed from each edge of the DTM surface.
+#  This will compensate for artifacts incase the surface was created from a TIN.
+DTM_BUFFER = 80
 
 # main output directory
-dirBase = r"D:\LidarProcessingTest"
+dirBase = r"E:\LidarProcessing"
 if not os.path.exists(dirBase):
     os.mkdir(dirBase)
 
@@ -211,18 +219,6 @@ def parallelProjectFunc(lidarFile, dirLAZ, dirLidar, srsIn):
     time.sleep(0.01)
 
 
-def parallelBlast2Dem(lidarFile, dirLasTile, dirDTMBuffer, dirLASTools):
-    # Creates .DTM files for ground surfaces
-    exeBlast2Dem = os.path.join(dirLASTools, "blast2dem.exe")
-    fpDtm = os.path.join(dirDTMBuffer, lidarFile[:-4] + ".dtm")
-    fpLidarFile = os.path.join(dirLasTile, dirLasTile, lidarFile)
-    cmdBlast2Dem = (
-        exeBlast2Dem + " -i " + fpLidarFile + " -o " + fpDtm + " -odtm -step 1"
-    )
-    subprocess.run(cmdBlast2Dem)
-    time.sleep(0.1)
-
-
 def parallelClipDTM(fpClipDTM, bufferedDTM, dirInDTM, dirOutDTM):
     # removes 20 meters from every DTM
     fpInDTM = os.path.join(dirInDTM, bufferedDTM)
@@ -246,7 +242,23 @@ def calcNCores(x, nCoresMax):
     return nCores
 
 
+def parallelGridSurfaceCreate(dirBufferDTM, lidarFile, dirLasTile, dirFUSION):
+    # Creates a DTM surface using the average of elevation of points in the cell
+    surfacefile = os.path.join(dirBufferDTM, lidarFile[:-4] + ".dtm")
+    dtmHeader = " 1 m m 0 0 2 3 "
+    dataFile = os.path.join(dirLasTile, lidarFile)
+    cmdFusionTIN = (
+        os.path.join(dirFUSION, "GridSurfaceCreate64.exe")
+        + " "
+        + surfacefile
+        + dtmHeader
+        + dataFile
+    )
+    subprocess.run(cmdFusionTIN, shell=True)
+
+
 def parallelCreateTIN(dirBufferDTM, lidarFile, dirLasTile, dirFUSION):
+    # Creates a DTM surface from a TIN using the ground points in the cell
     surfacefile = os.path.join(dirBufferDTM, lidarFile[:-4] + ".dtm")
     dtmHeader = " 1 m m 0 0 2 3 "
     dataFile = os.path.join(dirLasTile, lidarFile)
@@ -261,6 +273,7 @@ def parallelCreateTIN(dirBufferDTM, lidarFile, dirLasTile, dirFUSION):
 
 
 def parallelReTile(i, extents, dirLasTile, project, dirGroundPoints):
+    # Function that retiles laz files
     A = str(round(extents[i][0]))
     B = str(round(extents[i][3]))
     fpCropOut = os.path.join(dirLasTile, project + "_" + A + "_" + B + ".laz")
@@ -281,6 +294,7 @@ def parallelReTile(i, extents, dirLasTile, project, dirGroundPoints):
 
 
 def parallelExtractGndRtns(lidarFile, dirLidar, dirGroundPoints):
+    # Creates an LAZ file of just returns that can be used to create ground surfaces
     filterPipeline = [
         os.path.join(dirLidar, lidarFile),
         {"type": "filters.range", "limits": "Classification[2:2], Classification[8:8]"},
@@ -289,6 +303,62 @@ def parallelExtractGndRtns(lidarFile, dirLidar, dirGroundPoints):
 
     pipeline = pdal.Pipeline(json.dumps(filterPipeline))
     pipeline.execute()
+
+
+def doesIntersects(lidarExtent, dtmExtent):
+    # function to determine in a lidar tile intersects a DTM tile
+    # lidarExtent (list) - extent of the lidar tile [xMin, xMax, yMin, yMax]
+    # dtmExtent (list) - extent of the DTM tile [xMin, xMax, yMin, yMax]
+    lidarXMin = lidarExtent[0]
+    lidarXMax = lidarExtent[1]
+    lidarYMin = lidarExtent[2]
+    lidarYMax = lidarExtent[3]
+
+    dtmXMin = dtmExtent[0]
+    dtmXMax = dtmExtent[1]
+    dtmYMin = dtmExtent[2]
+    dtmYMax = dtmExtent[3]
+
+    # these four conditions must be True for a lidar tile to intersect the DTM tile
+    cond1 = lidarXMax >= dtmXMin
+    cond2 = lidarXMin <= dtmXMax
+    cond3 = lidarYMin <= dtmYMax
+    cond4 = lidarYMax >= dtmYMin
+
+    intersects = all([cond1, cond2, cond3, cond4])
+    return intersects
+
+
+def parallelRetile(i, dictDtmLidar, dirPoints, dictRetile, dirLasTile):
+    # List of the lidar file paths in the DTM tile
+    fpLidars = []
+    for j in dictDtmLidar[i]:
+        fpLidars.append(os.path.join(dirPoints, "Ground", j))
+
+    # File Name for the DTM tile. Based on the lower left coordinates
+    A = str(round(dictRetile[i][0]))
+    B = str(round(dictRetile[i][2]))
+    fpCropOut = os.path.join(dirLasTile, project + "_" + A + "_" + B + ".laz")
+
+    # Slowly building the pipeline
+    cropPipeline = fpLidars
+    cropPipeline.append({"type": "filters.merge"})
+    cropPipeline.append(
+        {
+            "type": "filters.crop",
+            "bounds": "("
+            + str(dictRetile[i][0:2])
+            + ","
+            + str(dictRetile[i][2:4])
+            + ")",
+        }
+    )
+    cropPipeline.append({"type": "writers.las", "filename": fpCropOut})
+    pipeline = pdal.Pipeline(json.dumps(cropPipeline))
+    pipeOut = pipeline.execute()
+    # Delete LAZ if no points were written
+    if pipeOut == 0:
+        os.remove(fpCropOut)
 
 
 # -----------------------------------------------------------------------------
@@ -307,6 +377,7 @@ lidarFiles.sort()
 # ----------------------------------------------------------------------------
 
 # Copy Lidar Files
+print("\tCopying Lidar Files")
 dirPoints = os.path.join(dirHomeFolder, "Points")
 if not os.path.exists(dirPoints):
     os.mkdir(dirPoints)
@@ -323,6 +394,7 @@ del lidarFile
 
 
 # project to EPSG 5070
+print("\tProjecting Lidar Files")
 srsNeedsDefining = project in dictSRS
 if srsNeedsDefining:
     srsIn = dictSRS[project]
@@ -342,7 +414,7 @@ Parallel(n_jobs=nCores)(
 del nCores
 
 # remove the copy of ╧original LAZs
-# shutil.rmtree(dirLAZ)
+shutil.rmtree(dirLAZ)
 
 # Move the Error log
 if os.path.exists(os.path.join(dirLidar, "_Error.log")):
@@ -353,6 +425,7 @@ if os.path.exists(os.path.join(dirLidar, "_Error.log")):
 
 
 # creating buffered tiles for DTM
+print("\tExtracting Ground Returns")
 dirGroundPoints = os.path.join(dirPoints, "Ground")
 if not os.path.exists(dirGroundPoints):
     os.mkdir(dirGroundPoints)
@@ -368,10 +441,11 @@ Parallel(n_jobs=nCores)(
 del nCores
 
 
+print("\tCalculating Extents of Buffered Lidar Tiles for DTM")
+# A better way to get the lidar project extent. This also returns the individual
+#  tile extents
 lidarFilesGround = os.listdir(dirGroundPoints)
-
-
-# Find the extent of the lidar collection
+dictExtents = {}
 for lidarFile in lidarFilesGround:
     fpLidarFile = os.path.join(dirGroundPoints, lidarFile)
     cmdMetadata = "pdal info  " + fpLidarFile + " --metadata"
@@ -381,24 +455,50 @@ for lidarFile in lidarFilesGround:
     maxx = json_info["metadata"]["maxx"]
     miny = json_info["metadata"]["miny"]
     maxy = json_info["metadata"]["maxy"]
-    if lidarFile == lidarFilesGround[0]:
-        minX = minx
-        maxX = maxx
-        minY = miny
-        maxY = maxy
-
-    if minx < minX:
-        minX = minx
-    if maxx > maxX:
-        maxX = maxx
-    if maxy > maxY:
-        maxY = maxy
-    if miny < minY:
-        minY = miny
-del maxx
+    dictExtents[lidarFile] = [minx, maxx, miny, maxy]
 del minx
-del maxy
+del maxx
 del miny
+del maxy
+
+
+# Extent of Lidar Collection
+xMinCollection = min([item[0] for item in list(dictExtents.values())])
+xMaxCollection = max([item[1] for item in list(dictExtents.values())])
+yMinCollection = min([item[2] for item in list(dictExtents.values())])
+yMaxCollection = max([item[3] for item in list(dictExtents.values())])
+
+# Create LAS tiles that are 4160 meters square (DTM_TILESIZE meters with a DTM_BUFFER meter buffer)
+nDTMRow = round(abs((yMinCollection - yMaxCollection) / DTM_TILESIZE) + 0.5)
+nDTMCol = round(abs((xMinCollection - xMaxCollection) / DTM_TILESIZE) + 0.5)
+
+# Extents for retiled lasfiles
+dictRetile = {}
+for i in range(nDTMRow):
+    for j in range(nDTMCol):
+        tileXMin = xMinCollection + j * DTM_TILESIZE - DTM_BUFFER
+        tileXMax = xMinCollection + j * DTM_TILESIZE + (DTM_TILESIZE + DTM_BUFFER)
+        tileYMin = yMinCollection + i * DTM_TILESIZE - DTM_BUFFER
+        tileYMax = yMinCollection + i * DTM_TILESIZE + (DTM_TILESIZE + DTM_BUFFER)
+
+        rowName = str(i)
+        colName = str(j)
+        while len(rowName) < 5:
+            rowName = "0" + rowName
+        while len(colName) < 5:
+            colName = "0" + colName
+        retileName = "dtm_" + rowName + "_" + colName
+        dictRetile[retileName] = [tileXMin, tileXMax, tileYMin, tileYMax]
+
+
+dictDtmLidar = {}
+for dtmKey in list(dictRetile.keys()):
+    lidarTiles = []
+    for lidarKey in list(dictExtents.keys()):
+
+        if doesIntersects(dictExtents[lidarKey], dictRetile[dtmKey]):
+            lidarTiles.append(lidarKey)
+        dictDtmLidar[dtmKey] = lidarTiles
 
 
 dirLasTile = os.path.join(dirPoints, "GroundTiles")
@@ -406,30 +506,11 @@ if not os.path.exists(dirLasTile):
     os.mkdir(dirLasTile)
 
 
-# Create LAS tiles that are 5160 meters square (5000 meters with a 80 meter buffer)
-tileSize = 3000
-buffer = 80
-nDTMRow = round(abs((minY - maxY) / tileSize) + 0.5)
-nDTMCol = round(abs((minX - maxX) / tileSize) + 0.5)
-
-# Extents for retiled lasfiles
-extents = []
-for i in range(nDTMRow):
-    for j in range(nDTMCol):
-        tileXMin = minX + j * tileSize - buffer
-        tileXMax = minX + j * tileSize + (tileSize + buffer)
-        tileYMin = minY + i * tileSize - buffer
-        tileYMax = minY + i * tileSize + (tileSize + buffer)
-
-        extents.append([tileXMin, tileXMax, tileYMin, tileYMax])
-
-
-# Index tiles of buffered ground points
-lidarFilesBufferedGround = os.listdir(dirLasTile)
-nCores = calcNCores(extents, nCoresMax)
+print("\tCreating Buffered Lidar Tiles for DTM")
+nCores = calcNCores(dictDtmLidar, nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelReTile)(i, extents, dirLasTile, project, dirGroundPoints)
-    for i in range(len(extents))
+    delayed(parallelRetile)(i, dictDtmLidar, dirPoints, dictRetile, dirLasTile)
+    for i in list(dictDtmLidar.keys())
 )
 del nCores
 
@@ -439,6 +520,7 @@ del nCores
 # ----------------------------------------------------------------------------
 
 # Directory for temporary DTM products
+print("\tCreating Temporary DTMs")
 dirTempDTM = os.path.join(dirHomeFolder, "DTM_Temp")
 if not os.path.exists(dirTempDTM):
     os.mkdir(dirTempDTM)
@@ -455,10 +537,11 @@ for e in lidarFilesGroundTilesTemp:
 del lidarFilesGroundTilesTemp
 
 
-# Use FUSION to create DTM from TIN
+# Use FUSION to create DTM surface
+# can either use parallelGridSurfaceCreate or parallelCreateTIN
 nCores = calcNCores(lidarFilesGroundTiles, nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelCreateTIN)(dirBufferDTM, lidarFile, dirLasTile, dirFUSION)
+    delayed(parallelGridSurfaceCreate)(dirBufferDTM, lidarFile, dirLasTile, dirFUSION)
     for lidarFile in lidarFilesGroundTiles
 )
 del nCores
@@ -466,24 +549,30 @@ del nCores
 
 # Remove some of the buffer that was introduced in the lasTile command.
 # TIN triangulations can break down at the edges.
+print("\tCreating Final DTMs")
 dirDeliverables = os.path.join(dirHomeFolder, "Deliverables")
 if not os.path.exists(dirDeliverables):
     os.mkdir(dirDeliverables)
 dirClipDTM = os.path.join(dirDeliverables, "DTM")
 if not os.path.exists(dirClipDTM):
     os.mkdir(dirClipDTM)
-exeClipDTM = os.path.join(dirFUSION, "ClipDTM.exe")
+exeClipDTM = os.path.join(dirFUSION, "ClipDTM64.exe")
 bufferedDTMs = os.listdir(dirBufferDTM)
 dirInDTM = dirBufferDTM
 dirOutDTM = dirClipDTM
 
 
-nCores = calcNCores(bufferedDTMs, nCoresMax)
-Parallel(n_jobs=nCores)(
-    delayed(parallelClipDTM)(exeClipDTM, bufferedDTM, dirInDTM, dirOutDTM)
-    for bufferedDTM in bufferedDTMs
-)
-del nCores
+for bufferedDTM in bufferedDTMs:
+    # def parallelClipDTM(fpClipDTM, bufferedDTM, dirInDTM, dirOutDTM)
+    # removes 20 meters from every DTM
+    fpInDTM = os.path.join(dirInDTM, bufferedDTM)
+    fpOutDTM = os.path.join(dirOutDTM, bufferedDTM)
+    # Runs FUSION ClipDTM to create index files
+    cmdClipDTM = (
+        exeClipDTM + " /shrink " + fpInDTM + " " + fpOutDTM + " 20.0 20.0 20.0 20.0"
+    )
+    subprocess.run(cmdClipDTM, shell=True)
+    time.sleep(0.1)
 
 # remove intermediate directories to save space
 shutil.rmtree(dirTempDTM)
@@ -493,7 +582,7 @@ shutil.rmtree(dirGroundPoints)
 # ----------------------------------------------------------------------------
 # Run QAQC
 # ----------------------------------------------------------------------------
-
+print("\tRunning FUSION Catalog\n")
 dirProductHome = os.path.join(dirHomeFolder, "Products")  # FUSION PRODUCTHOME
 if not os.path.exists(dirProductHome):
     os.mkdir(dirProductHome)
@@ -512,7 +601,6 @@ del lidarFile
 
 
 # Run Catalog
-print("\nRunning FUSION Catalog\n")
 exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
 lidarFilePaths = [os.path.join(dirLidar, e) for e in lidarFiles]
 

@@ -32,7 +32,7 @@ SRS.Lidar = CRS("+init=epsg:5070")
 dirFUSION <- "C:\\FUSION\\"
 
 #Lidar Project Name
-project <- "CO_Eastern_South_Priority2_2018"
+project <- "CO_ARRA_ParkCo_2010"
 
 #Raster resolution
 CELLSIZE <- 30
