@@ -7,8 +7,6 @@ When possible, attempts were made to name variables using the same notation as t
 
 Verify that the file structure of your data is compatible with these scripts.  
 
-If using parallelCreateTIN to create surface files and experiencing memory issues, decrease `DTM_TILESIZE` (e.g., 2000) and/or the number of processing cores at this step.  
-
 ## conda environment
 - `cms2.yml` - YAML file used when developing these scripts. Note, this contains Spyder, which makes the environment bloated. Please review before installing.   
 
@@ -23,8 +21,6 @@ User needs to edit the following:
 - `project` - the name of the lidar project
 - `dirData` - file path to the input lidar data
 - `dirFUSION` - file path to FUSION executables
-- `DTM_TILESIZE` - nominal size of the DTM tiles before `DTM_BUFFER` is added 
-- `DTM_BUFFER` - buffer added to `DTM_TILESIZE` before creating DTM. Note that 20 meters will be removed before final DTM tile is created
 - `nCoresMax` - maximum number of processing cores available
 - `dirBase` - main output directory
 
