@@ -38,10 +38,10 @@ project <- "CO_ARRA_ParkCo_2010"
 CELLSIZE <- 30
 
 #Maximum number of processing cores
-NCORESMAX <- 12
+NCORESMAX <- 26
 
 #Working directory (same as dirWD in script 01_PrepareDataForFusion.py)
-DIR_BASE <- paste0("E:\\LidarProcessing\\")
+DIR_BASE <- paste0("D:\\LidarProcessing\\")
 
 #Direcotry of lidar data
 DIR_LIDAR <- paste0(DIR_BASE, project, "\\", "Points\\", "LAZ5070\\")
@@ -306,12 +306,11 @@ writeSection5 <- function(HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS){
 #Name:
 #	writeSection6
 #Purpose:
-#	Write section 6 of the PRP; PointData
+#	Write section 6 of the PRP
 #Inputs:
 #	DIR_LIDAR (str) - a file path to the lidar LAS files
 #Outputs:
 #	Text for section 6
-#	A list tracking the min and max coordinates of the lidar returns; note these values are extracted from the header
 writeSection6 <- function(DIR_LIDAR, ext = ""){
 	
 	#file path for lidar files
@@ -325,10 +324,10 @@ writeSection6 <- function(DIR_LIDAR, ext = ""){
 	}
 	
 	#Need to keep track of the minimum and maximum x and y-values for writeSection11()
-	xMinPoints <- 1000000000
-	xMaxPoints <- 0
-	yMinPoints <- 1000000000
-	yMaxPoints <- 0
+	xMinPoints <- vector()
+	xMaxPoints <- vector()
+	yMinPoints <- vector()
+	yMaxPoints <- vector()
 	
 	cat('[PointData]')
 	cat('\n')
@@ -366,23 +365,88 @@ writeSection6 <- function(DIR_LIDAR, ext = ""){
 		nPoints <- pheader$'Number of point records'
 		
 		#update min and max x and y values
-		xMinPoints <- ifelse(xMin < xMinPoints, xMin, xMinPoints)
-		xMaxPoints <- ifelse(xMax > xMaxPoints, xMax, xMaxPoints)
-		yMinPoints <- ifelse(yMin < yMinPoints, yMin, yMinPoints)
-		yMaxPoints <- ifelse(yMax > yMaxPoints, yMax, yMaxPoints)
+		xMinPoints <- c(xMinPoints, xMin)
+		xMaxPoints <- c(xMaxPoints, xMax)
+		yMinPoints <- c(yMinPoints, yMin)
+		yMaxPoints <- c(yMaxPoints, yMax)
 		
 		#Build the string
 		cat(paste0('Object_', i, '=1,1,', xMin, ',', yMin, ',', zMin, ',', xMax, ',', yMax, ',', zMax, ',' , nPoints, ',' , LAS_FILES[i]))
 		cat('\n')
 	}
+}
+
+#Name:
+#	getLidarExtent
+#Purpose:
+#	Retrieve the extent of the lidar collection
+#Inputs:
+#	DIR_LIDAR (str) - a file path to the lidar LAS files
+#Outputs:
+#	A list tracking the min and max coordinates of the lidar returns; note these values are extracted from the header
+getLidarExtent <- function(DIR_LIDAR, ext = ""){
+	
+	#file path for lidar files
+	ext = toupper(ext)
+	if(!is.element(ext, c("LAS", "LAZ"))) stop ("ext must be LAS or LAZ")
+	if(ext == "LAS"){
+		LAS_FILES <- dir(DIR_LIDAR, pattern = "[.]las$", full.names = TRUE, ignore.case = TRUE)
+	}
+	if(ext == "LAZ"){
+		LAS_FILES <- dir(DIR_LIDAR, pattern = "[.]laz$", full.names = TRUE, ignore.case = TRUE)
+	}
+	
+	#Need to keep track of the minimum and maximum x and y-values for writeSection11()
+	xMinPoints <- vector()
+	xMaxPoints <- vector()
+	yMinPoints <- vector()
+	yMaxPoints <- vector()
+	
+	for(i in 1:length(LAS_FILES)){
+		#the key to reading a header. this is from the APRS website
+		hd <- publicHeaderDescription()
+		#creates a blank header
+		pheader <- vector("list", nrow(hd))
+		#assigns names to the list
+		names(pheader) <- hd$Item
+		#Opens a connection to the LAS file
+		con <- file(LAS_FILES[i], open = "rb")
+		#check to see if the file is a lasfile
+		isLASFbytes <- readBin(con, "raw", size = 1, n = 4, endian = "little")
+			pheader[[hd$Item[1]]] <- readBin(isLASFbytes, "character", size = 4, endian = "little")
+		if (!pheader[[hd$Item[1]]] == "LASF") {
+			stop("The LASfile input is not a valid LAS file")
+		}
+		for (j in 2:nrow(hd)) {
+			pheader[[hd$Item[j]]] <- readBin(con, what = hd$what[j], 
+				size = hd$Rsize[j], endian = "little", n = hd$n[j])
+		}
+		#close the connection
+		close(con)
+
+		#look up min, max, and number of points		
+		xMin <- pheader$'Min X'
+		xMax <- pheader$'Max X'
+		yMin <- pheader$'Min Y'
+		yMax <- pheader$'Max Y'
+		zMin <- pheader$'Min Z'
+		zMax <- pheader$'Max Z'
+		nPoints <- pheader$'Number of point records'
+		
+		#update min and max x and y values
+		xMinPoints <- c(xMinPoints, xMin)
+		xMaxPoints <- c(xMaxPoints, xMax)
+		yMinPoints <- c(yMinPoints, yMin)
+		yMaxPoints <- c(yMaxPoints, yMax)
+		
+	}
 	#Return the min and max x and y's
 	return(list(
-		xMinPoints = xMinPoints, 
-		xMaxPoints = xMaxPoints,
-		yMinPoints = yMinPoints,
-		yMaxPoints = yMaxPoints)
+		xMinPoints = min(xMinPoints), 
+		xMaxPoints = max(xMaxPoints),
+		yMinPoints = min(yMinPoints),
+		yMaxPoints = max(yMaxPoints))
 	)
-
 }
 
 
@@ -394,7 +458,10 @@ writeSection6 <- function(DIR_LIDAR, ext = ""){
 #	PROCESSINGHOME (str) - file path 
 #Outputs:
 #	Text for section 7
-writeSection7 <- function(PROCESSINGHOME){
+writeSection7 <- function(DTMSPEC ,PROCESSINGHOME, dirFUSION){
+	#Run DTMDescribe.exe
+	RunDtmDescribe(DtmDirectory = DTMSPEC, OutputDirectory = PROCESSINGHOME, OutputName = "DTM_Ground", dirFUSION = dirFUSION)
+	
 	#Read in the CSV created with RunDtmDescribe()
 	DtmDescribe <- read.csv(file=paste0(PROCESSINGHOME, "DTM_Ground_Summary.csv" ), as.is=TRUE)
 	
@@ -406,7 +473,7 @@ writeSection7 <- function(PROCESSINGHOME){
 	cat(paste0('ObjectCount=', OBJECTCOUNT))
 	cat('\n')
 	
-	for( i in 1:OBJECTCOUNT){
+	for(i in 1:OBJECTCOUNT){
 		ORIGIN_X <- DtmDescribe[i,"Origin.X"]
 		ORIGIN_Y <- DtmDescribe[i,"Origin.Y"]
 		MIN_VAL <- DtmDescribe[i,"Min.data.value"]
@@ -490,14 +557,14 @@ writeSection9 <- function(){
 #	
 #Outputs:
 #	Text for section 10
-writeSection10 <- function(NBLOCKSHIGH, NBLOCKSWIDE, BLOCKHEIGHT, BLOCKWIDTH, CELLSIZE,  DTMDESCRIBE){
+writeSection10 <- function(NBLOCKSHIGH, NBLOCKSWIDE, BLOCKHEIGHT, BLOCKWIDTH, CELLSIZE,  LIDAREXENT){
 	#Number of blocks
 	nBlocks <- NBLOCKSHIGH * NBLOCKSWIDE
 
-	xMin <- min(DTMDESCRIBE$Origin.X)
-	xMax <- max(DTMDESCRIBE$Upper.right.X)
-	yMin <- min(DTMDESCRIBE$Origin.Y)
-	yMax <- max(DTMDESCRIBE$Upper.right.Y)
+	xMin <- LIDAREXENT$xMinPoints
+	xMax <- LIDAREXENT$xMaxPoints
+	yMin <- LIDAREXENT$yMinPoints
+	yMax <- LIDAREXENT$xMaxPoints
 	
 	#Shift cell origin to match LandTrendr
 	xMin <- xMin - xMin%%CELLSIZE - CELLSIZE
@@ -545,12 +612,12 @@ writeSection10 <- function(NBLOCKSHIGH, NBLOCKSWIDE, BLOCKHEIGHT, BLOCKWIDTH, CE
 #	CELLSIZE (num) - Cell size for output rasters
 #Outputs:
 #	Text for section 11
-writeSection11 <- function(LIDARPOINTS, CELLSIZE){
+writeSection11 <- function(LIDAREXTENT, CELLSIZE){
 	#Lidar Return min and max (from writeSection6())
-	xMinPoints <- LIDARPOINTS$xMinPoints
-	xMaxPoints <- LIDARPOINTS$xMaxPoints
-	yMinPoints <- LIDARPOINTS$yMinPoints
-	yMaxPoints <- LIDARPOINTS$yMaxPoints
+	xMinPoints <- LIDAREXTENT$xMinPoints
+	xMaxPoints <- LIDAREXTENT$xMaxPoints
+	yMinPoints <- LIDAREXTENT$yMinPoints
+	yMaxPoints <- LIDAREXTENT$yMaxPoints
 	
 	
 	xMinUser <- xMinPoints - xMinPoints %% CELLSIZE - CELLSIZE
@@ -674,7 +741,7 @@ publicHeaderDescription <- function() {
 #	a list that will store pblic header info for a LAS file.
 writePRP <- function(PROJECT, LATITUDE, HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS,
 				PRODUCTHOME, DIR_LIDAR, tileWidth, tileHeight, blockWidth, blockHeight, 
-				nBlocksHigh, nBlocksWide, DtmDescribe, nCores, dirFUSION){
+				nBlocksHigh, nBlocksWide, nCores, DTMSPEC, dirFUSION, lidarExtent){
 	#PRP file that will be written
 	DIR_PRP = paste0(HOMEFOLDER, "PRP\\")
 	if(!dir.exists(DIR_PRP)) dir.create(DIR_PRP)
@@ -696,11 +763,13 @@ writePRP <- function(PROJECT, LATITUDE, HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS,
 	writeSection5(HOMEFOLDER = HOMEFOLDER, PROCESSINGHOME = PROCESSINGHOME, DIRSCRIPTS = DIRSCRIPTS)
 	
 	#Point data
-	lidarPoints <- writeSection6(DIR_LIDAR = DIR_LIDAR, ext = "LAZ")
+	writeSection6(DIR_LIDAR = DIR_LIDAR, ext = "LAZ")
 	
 	#Ground data
-	writeSection7(PROCESSINGHOME = PROCESSINGHOME)
-	
+	if(length(dir(DTMSPEC)) > 0){
+		writeSection7(DTMSPEC = DTMSPEC, PROCESSINGHOME = PROCESSINGHOME, dirFUSION = dirFUSION)
+	}
+
 	#Density data
 	writeSection8(PRODUCTHOME = PRODUCTHOME, PROCESSINGHOME = PROCESSINGHOME, dirFUSION = dirFUSION)
 	
@@ -708,10 +777,10 @@ writePRP <- function(PROJECT, LATITUDE, HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS,
 	writeSection9()
 		
 	#Processing Blocks
-	writeSection10(NBLOCKSHIGH = nBlocksHigh, NBLOCKSWIDE = nBlocksWide, BLOCKHEIGHT = blockHeight, BLOCKWIDTH = blockWidth, CELLSIZE = CELLSIZE,  DTMDESCRIBE = DtmDescribe)
+	writeSection10(NBLOCKSHIGH = nBlocksHigh, NBLOCKSWIDE = nBlocksWide, BLOCKHEIGHT = blockHeight, BLOCKWIDTH = blockWidth, CELLSIZE = CELLSIZE,  LIDAREXENT = lidarExtent)
 	
 	#Processing Extent
-	writeSection11(LIDARPOINTS = lidarPoints, CELLSIZE = CELLSIZE)
+	writeSection11(LIDAREXTENT = lidarExtent, CELLSIZE = CELLSIZE)
 	
 	#Close diversion
 	sink()
@@ -739,20 +808,13 @@ createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR
 	DTMSPEC <- paste0(HOMEFOLDER, 'Deliverables\\DTM\\')
 	PRODUCTHOME <- paste0(HOMEFOLDER, "Products\\")
 
-	#Run RunDtmDescribe for the ground DTMs. This is used in a few places
-	RunDtmDescribe(DtmDirectory = DTMSPEC, OutputDirectory = PROCESSINGHOME, OutputName = "DTM_Ground", dirFUSION = dirFUSION)
+	lidarExtent <- getLidarExtent(DIR_LIDAR, ext = "LAZ")
+	#- Find Latitude Lidar Points
+	xMid <- mean(lidarExtent$xMinPoints, lidarExtent$xMaxPoints)
+	yMid <- mean(lidarExtent$yMinPoints, lidarExtent$yMaxPoints)
 	
-	#Read in the CSV created with RunDtmDescribe()
-	DtmDescribe <- read.csv(file=paste0(PROCESSINGHOME, "DTM_Ground_Summary.csv"), as.is=TRUE)
-	
-	
-	##- Find Latitude from DtmDescribe
-	xMid <- mean(max(DtmDescribe$"Upper.right.X"), min(DtmDescribe$"Origin.X"))
-	yMid <- mean(max(DtmDescribe$"Upper.right.Y"), min(DtmDescribe$"Origin.Y"))
-	
-	latitude <- calculateLatitude(xMid = xMid, yMid = yMid) 
-	
-	
+	latitude <- calculateLatitude(xMid = xMid, yMid = yMid)
+
 	##------------
 	# Find optimal (?) block sizes
 	##------------
@@ -760,20 +822,18 @@ createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR
 	# cores available for processing, having a ridiculus number of processing blocks, 
 	# and not having a lot of "NoData" space in the final rasters.
 	# I chose to limit the NoData space. 
-	
+
 	#min and max values for the grid metrics
-	cellMinX <- min(DtmDescribe$"Origin.X") - min(DtmDescribe$"Origin.X") %% cellSize
-	cellMinY <- min(DtmDescribe$"Origin.Y") - min(DtmDescribe$"Origin.Y") %% cellSize
+	cellMinX <- lidarExtent$xMinPoints - lidarExtent$xMinPoints %% cellSize
+	cellMinY <- lidarExtent$yMinPoints - lidarExtent$yMinPoints %% cellSize
 	
-	cellMaxX <- max(DtmDescribe$"Upper.right.X") - max(DtmDescribe$"Upper.right.X") %% cellSize + cellSize
-	cellMaxY <- max(DtmDescribe$"Upper.right.Y") - max(DtmDescribe$"Upper.right.Y") %% cellSize + cellSize
+	cellMaxX <- lidarExtent$xMaxPoints - lidarExtent$xMaxPoints %% cellSize + cellSize
+	cellMaxY <- lidarExtent$yMaxPoints - lidarExtent$yMaxPoints %% cellSize + cellSize
 	
 	
 	blockRangeX <- cellMaxX - cellMinX + 2*cellSize #Add a little buffer on each side of the block
 	blockRangeY <- cellMaxY - cellMinY + 2*cellSize #Add a little buffer on each side of the block
 	
-	#blockWidth <- ifelse( (cellSize*100-blockRangeX%%(cellSize*100) < cellSize*50), cellSize*100, cellSize*50) 
-	#blockHeight <- ifelse( (cellSize*100-blockRangeY%%(cellSize*100) < cellSize*50), cellSize*100, cellSize*50) 
 	#Just make it 3000 meters...
 	blockWidth <- cellSize*100
 	blockHeight <- cellSize*100
@@ -807,7 +867,8 @@ createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR
 		#reassign nCores
 		nCores <- nBlocksWide * nBlocksHigh 
 	}
-	
+
+
 	#Writes the PRP file
 	writePRP(PROJECT = project, LATITUDE = latitude, 
 		HOMEFOLDER = HOMEFOLDER, PROCESSINGHOME = PROCESSINGHOME,
@@ -816,8 +877,8 @@ createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR
 		tileWidth = tileWidth, tileHeight = tileHeight, 
 		blockWidth = blockWidth, blockHeight = blockHeight, 
 		nBlocksHigh = nBlocksHigh, nBlocksWide = nBlocksWide,
-		DtmDescribe = DtmDescribe, nCores = nCores, 
-		dirFUSION = dirFUSION)
+		nCores = nCores, DTMSPEC = DTMSPEC,
+		dirFUSION = dirFUSION, lidarExtent = lidarExtent)
 }
 
 
