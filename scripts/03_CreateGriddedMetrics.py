@@ -272,7 +272,7 @@ del dirDestination
 # PDAL Error Log
 # -----------------------------------------------------------------------------
 
-fpPdalErrorLog = os.path.join(dirHomeFolder, "Products", "_Error.log")
+fpPdalErrorLog = os.path.join(dirHomeFolder, "_Error.log")
 if os.path.exists(fpPdalErrorLog):
     dirPdalLog = os.path.join(dirOutProject, "PdalLog")
     if not os.path.exists(dirPdalLog):
