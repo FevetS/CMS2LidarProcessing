@@ -42,7 +42,7 @@ project = "CO_ARRA_ParkCo_2010"
 
 print(project)
 
-# Directory of lidar data needing to be processed external HHD
+# Directory of lidar data needing to be processed (e.g., external HHD)
 dirData = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
 
 # FUSION directory
@@ -99,8 +99,10 @@ dictSRS = {
 
 # "parallel" functions are used with joblib
 def parallelProjectFunc(lidarFile, dirLAZ, dirLidar, srsIn):
-    # Used to project the laz files to EPSG 5070
-    lasfile5070 = os.path.join(dirLidar, lidarFile)
+    # Function used to project the laz files to EPSG 5070
+    
+    #File name of projected LAZ file
+    lasfile5070 = os.path.join(dirLidar, lidarFile[:-4]+".laz")
 
     # pipepline depending if the CRS is defined
     if srsIn == None:
