@@ -800,7 +800,7 @@ writePRP <- function(PROJECT, LATITUDE, HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS,
 #	The PRP file for the AP setup file
 createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR, dirFUSION){
 	
-	print(paste0("Creating ground DTM for ", project));flush.console()	
+	print(paste0("Creating PRP file for ", project));flush.console()	
 	
 	#These folders are following the LTK naming scheme from setup.bat
 	HOMEFOLDER <- paste0(DIR_BASE, project, '\\')
