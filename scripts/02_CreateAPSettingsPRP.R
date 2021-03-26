@@ -44,7 +44,7 @@ NCORESMAX <- 26
 DIR_BASE <- paste0("D:\\LidarProcessing\\")
 
 #Direcotry of lidar data
-DIR_LIDAR <- paste0(DIR_BASE, project, "\\", "Points\\", "LAZ5070\\")
+DIR_LAZ5070 <- paste0(DIR_BASE, project, "\\", "Points\\", "LAZ5070\\")
 
 #Directory of AP scripts
 DIRSCRIPTS <- "C:\\Users\\pafekety\\Desktop\\CMS2LidarProcessing\\scripts\\AP" # Do not include the trailing \\
@@ -308,7 +308,7 @@ writeSection5 <- function(HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS){
 #Purpose:
 #	Write section 6 of the PRP
 #Inputs:
-#	DIR_LIDAR (str) - a file path to the lidar LAS files
+#	DIR_LIDAR (str) - a file path to the lidar files
 #Outputs:
 #	Text for section 6
 writeSection6 <- function(DIR_LIDAR, ext = ""){
@@ -381,7 +381,7 @@ writeSection6 <- function(DIR_LIDAR, ext = ""){
 #Purpose:
 #	Retrieve the extent of the lidar collection
 #Inputs:
-#	DIR_LIDAR (str) - a file path to the lidar LAS files
+#	DIR_LIDAR (str) - a file path to the lidar files
 #Outputs:
 #	A list tracking the min and max coordinates of the lidar returns; note these values are extracted from the header
 getLidarExtent <- function(DIR_LIDAR, ext = ""){
@@ -800,7 +800,7 @@ writePRP <- function(PROJECT, LATITUDE, HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS,
 #	The PRP file for the AP setup file
 createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR, dirFUSION){
 	
-	print(paste0("Creating ground DTM for ", project));flush.console()	
+	print(paste0("Creating PRP file for ", project));flush.console()	
 	
 	#These folders are following the LTK naming scheme from setup.bat
 	HOMEFOLDER <- paste0(DIR_BASE, project, '\\')
@@ -893,8 +893,8 @@ createPRP(
   cellSize = CELLSIZE, 
   nCores = NCORESMAX, 
   DIR_BASE = DIR_BASE, 
-  DIRSCRIPTS, 
-  DIR_LIDAR, 
-  dirFUSION
+  DIRSCRIPTS = DIRSCRIPTS, 
+  DIR_LIDAR = DIR_LAZ5070, 
+  dirFUSION = dirFUSION
 )
 

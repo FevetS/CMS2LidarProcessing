@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Name:    01_PrepareDataForFusion.py
+Name:    01_PrepareDataForFusion_MultiProjects.py
 Purpose: Copy lidar files; project to EPSG:5070; create DTMs; run QAQC
 Author:  PA Fekety, Colorado State University, patrick.fekety@colostate.edu
 Date:    2020.12.10
@@ -9,10 +9,7 @@ Date:    2020.12.10
 
 """
 Notes:
-  There are some sleep calls. These were added during the workflow 
-    to aid in debugging. I do not believe they are still needed.
-  
-  Run with LAZs and No FUSION Indexing
+  This version is will run multiple lidar projects 
 """
 
 # -----------------------------------------------------------------------------
@@ -37,28 +34,8 @@ import subprocess
 start = time.time()
 
 # Assign a project
-project = "CO_ARRA_ParkCo_2010"
+projects = ["CO_ARRA_ParkCo_2010", "CO_ARRA_GrandCo_2010"]
 
-print(project)
-
-# Directory of lidar data needing to be processed (e.g., external HHD)
-dirLidarOriginal = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
-
-# FUSION directory
-dirFUSION = r"C:\Fusion"
-
-# Maximum number of processing cores
-nCoresMax = 26
-
-# main output directory
-dirBase = r"D:\LidarProcessing"
-if not os.path.exists(dirBase):
-    os.mkdir(dirBase)
-
-# directory for the specific lidar project; HOME_FOLDER in FUSION scripts
-dirHomeFolder = os.path.join(dirBase, project)
-if not os.path.exists(dirHomeFolder):
-    os.mkdir(dirHomeFolder)
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -162,6 +139,42 @@ def parallelProjectFunc(lidarFile, dirLidarCopy, dirLAZ5070, srsIn):
     time.sleep(0.01)
 
 
+def parallelRunQAQC(project, dirBase, dirFUSION):
+
+    dirHomeFolder = os.path.join(dirBase, project)
+    dirProductHome = os.path.join(dirHomeFolder, "Products")  # FUSION PRODUCTHOME
+    if not os.path.exists(dirProductHome):
+        os.mkdir(dirProductHome)
+    dirQAQC = os.path.join(dirProductHome, "QAQC")
+    if not os.path.exists(dirQAQC):
+        os.mkdir(dirQAQC)
+
+    # Text file of lidar file paths
+    dirPoints = os.path.join(dirHomeFolder, "Points")
+    dirLidar = os.path.join(dirPoints, "LAZ5070")
+    lidarFiles5070 = os.listdir(dirLidar)
+    fpLidarFilePaths = os.path.join(dirQAQC, "lidarFiles.txt")
+    with open(fpLidarFilePaths, "w") as f:
+        for lidarFile in lidarFiles5070:
+            f.write(os.path.join(dirLidar, lidarFile))
+            f.write("\n")
+    del lidarFile
+
+    # Run Catalog
+    exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
+
+    fpQAQCOut = os.path.join(dirQAQC, "QAQC.csv")
+    cmdCatalog = (
+        exeCatalog
+        + " /rawcounts /coverage /intensity:400,0,255 /firstdensity:400,2,8 /density:400,4,16 "
+        + fpLidarFilePaths
+        + " "
+        + fpQAQCOut
+    )
+    cmdCatalog
+    subprocess.run(cmdCatalog, shell=True)
+
+
 def calcNCores(x, nCoresMax):
     # Calculates the number of cores that should be dedicated to parallel processes
     # x (list) object whose length will be compared
@@ -181,132 +194,127 @@ def calcNCores(x, nCoresMax):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-# Lidar files to be processed
-lidarFilesOriginal = os.listdir(dirLidarOriginal)
-lidarFilesOriginal.sort()
+for project in projects:
+    # -------------------------------------------------------------------------
+    # Setup
+    # -------------------------------------------------------------------------
+    print(project)
 
+    # Directory of lidar data needing to be processed (e.g., external HHD)
+    dirLidarOriginal = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
 
-# ----------------------------------------------------------------------------
-# Process Point Data
-# ----------------------------------------------------------------------------
+    # FUSION directory
+    dirFUSION = r"C:\Fusion"
 
-# Copy Lidar Files
-print("\tCopying Lidar Files")
-dirPoints = os.path.join(dirHomeFolder, "Points")
-if not os.path.exists(dirPoints):
-    os.mkdir(dirPoints)
+    # Maximum number of processing cores
+    nCoresMax = 26
 
-dirLidarCopy = os.path.join(dirPoints, "LidarCopy")
-if not os.path.exists(dirLidarCopy):
-    os.mkdir(dirLidarCopy)
+    # main output directory
+    dirBase = r"D:\LidarProcessing"
+    if not os.path.exists(dirBase):
+        os.mkdir(dirBase)
 
-for lidarFile in lidarFilesOriginal:
-    shutil.copy(
-        src=os.path.join(dirLidarOriginal, lidarFile),
-        dst=os.path.join(dirLidarCopy, lidarFile),
+    # directory for the specific lidar project; HOME_FOLDER in FUSION scripts
+    dirHomeFolder = os.path.join(dirBase, project)
+    if not os.path.exists(dirHomeFolder):
+        os.mkdir(dirHomeFolder)
+
+    # Lidar files to be processed
+    lidarFilesOriginal = os.listdir(dirLidarOriginal)
+    lidarFilesOriginal.sort()
+
+    # -------------------------------------------------------------------------
+    # Process Point Data
+    # -------------------------------------------------------------------------
+
+    # Copy Lidar Files
+    print("\tCopying Lidar Files")
+    dirPoints = os.path.join(dirHomeFolder, "Points")
+    if not os.path.exists(dirPoints):
+        os.mkdir(dirPoints)
+
+    dirLidarCopy = os.path.join(dirPoints, "LidarCopy")
+    if not os.path.exists(dirLidarCopy):
+        os.mkdir(dirLidarCopy)
+
+    for lidarFile in lidarFilesOriginal:
+        shutil.copy(
+            src=os.path.join(dirLidarOriginal, lidarFile),
+            dst=os.path.join(dirLidarCopy, lidarFile),
+        )
+    del lidarFile
+    del lidarFilesOriginal
+
+    # project to EPSG 5070
+    print("\tProjecting Lidar Files")
+    srsNeedsDefining = project in dictSRS
+    if srsNeedsDefining:
+        srsIn = dictSRS[project]
+    else:
+        srsIn = None
+
+    dirLAZ5070 = os.path.join(dirPoints, "LAZ5070")
+    if not os.path.exists(dirLAZ5070):
+        os.mkdir(dirLAZ5070)
+
+    lidarFilesCopy = os.listdir(dirLidarCopy)
+    lidarFilesCopy.sort()
+
+    nCores = calcNCores(lidarFilesCopy, nCoresMax)
+    Parallel(n_jobs=nCores)(
+        delayed(parallelProjectFunc)(lidarFile, dirLidarCopy, dirLAZ5070, srsIn)
+        for lidarFile in lidarFilesCopy
     )
-del lidarFile
-del lidarFilesOriginal
+    del nCores
+    del lidarFilesCopy
 
+    # remove the copy of Lidar files
+    shutil.rmtree(dirLidarCopy)
 
-# project to EPSG 5070
-print("\tProjecting Lidar Files")
-srsNeedsDefining = project in dictSRS
-if srsNeedsDefining:
-    srsIn = dictSRS[project]
-else:
-    srsIn = None
+    # Move the Error log
+    if os.path.exists(os.path.join(dirLAZ5070, "_Error.log")):
+        # Move the error log
+        shutil.move(
+            os.path.join(dirLAZ5070, "_Error.log"),
+            os.path.join(dirHomeFolder, "_Error.log"),
+        )
 
-dirLAZ5070 = os.path.join(dirPoints, "LAZ5070")
-if not os.path.exists(dirLAZ5070):
-    os.mkdir(dirLAZ5070)
+    # -------------------------------------------------------------------------
+    # Create a few directories
+    # -------------------------------------------------------------------------
 
-lidarFilesCopy = os.listdir(dirLidarCopy)
-lidarFilesCopy.sort()
+    dirFusionProcessing = os.path.join(dirHomeFolder, "Processing")
+    dirFusionProcessingAP = os.path.join(dirFusionProcessing, "AP")
+    if not os.path.exists(dirFusionProcessing):
+        os.mkdir(dirFusionProcessing)
+    if not os.path.exists(dirFusionProcessingAP):
+        os.mkdir(dirFusionProcessingAP)
 
-nCores = calcNCores(lidarFilesCopy, nCoresMax)
-Parallel(n_jobs=nCores)(
-    delayed(parallelProjectFunc)(lidarFile, dirLidarCopy, dirLAZ5070, srsIn)
-    for lidarFile in lidarFilesCopy
-)
-del nCores
-del lidarFilesCopy
+    # -------------------------------------------------------------------------
+    # Error Checking
+    # -------------------------------------------------------------------------
+    # parallelProjectFunc() creates a log file if it failed reprojecting a file
+    # Notify the user of the error and copy the error log
 
-# remove the copy of Lidar files
-shutil.rmtree(dirLidarCopy)
+    if os.path.exists(os.path.join(dirHomeFolder, "_Error.log")):
+        print("\n")
+        print("Errors Exist")
 
-# Move the Error log
-if os.path.exists(os.path.join(dirLAZ5070, "_Error.log")):
-    # Move the error log
-    shutil.move(
-        os.path.join(dirLAZ5070, "_Error.log"),
-        os.path.join(dirHomeFolder, "_Error.log"),
-    )
+        # Print contents to console
+        with open(os.path.join(dirHomeFolder, "_Error.log")) as f:
+            print(f.read())
 
 
 # ----------------------------------------------------------------------------
 # Run QAQC
 # ----------------------------------------------------------------------------
-print("\tRunning FUSION Catalog\n")
-dirProductHome = os.path.join(dirHomeFolder, "Products")  # FUSION PRODUCTHOME
-if not os.path.exists(dirProductHome):
-    os.mkdir(dirProductHome)
-dirQAQC = os.path.join(dirProductHome, "QAQC")
-if not os.path.exists(dirQAQC):
-    os.mkdir(dirQAQC)
+print("\nRunning FUSION Catalog\n")
 
-# Text file of lidar file paths
-lidarFiles5070 = os.listdir(dirLAZ5070)
-lidarFiles5070.sort()
-fpLidarFilePaths = os.path.join(dirQAQC, "lidarFiles.txt")
-with open(fpLidarFilePaths, "w") as f:
-    for lidarFile in lidarFiles5070:
-        f.write(os.path.join(dirLAZ5070, lidarFile))
-        f.write("\n")
-del lidarFile
-del lidarFiles5070
-
-# Run Catalog
-exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
-
-fpQAQCOut = os.path.join(dirQAQC, "QAQC.csv")
-cmdCatalog = (
-    exeCatalog
-    + " /rawcounts /coverage /intensity:400,0,255 /firstdensity:400,1,8 /density:400,2,16 "
-    + fpLidarFilePaths
-    + " "
-    + fpQAQCOut
+nCores = calcNCores(projects, nCoresMax)
+Parallel(n_jobs=nCores)(
+    delayed(parallelRunQAQC)(project, dirBase, dirFUSION) for project in projects
 )
-cmdCatalog
-subprocess.run(cmdCatalog, shell=True)
-
-
-# ----------------------------------------------------------------------------
-# Create a few directories
-# ----------------------------------------------------------------------------
-
-dirFusionProcessing = os.path.join(dirHomeFolder, "Processing")
-dirFusionProcessingAP = os.path.join(dirFusionProcessing, "AP")
-if not os.path.exists(dirFusionProcessing):
-    os.mkdir(dirFusionProcessing)
-if not os.path.exists(dirFusionProcessingAP):
-    os.mkdir(dirFusionProcessingAP)
-
-
-# ----------------------------------------------------------------------------
-# Error Checking
-# ----------------------------------------------------------------------------
-# parallelProjectFunc() creates a log file if it failed reprojecting a file
-# Notify the user of the error and copy the error log
-
-if os.path.exists(os.path.join(dirHomeFolder, "_Error.log")):
-    print("\n")
-    print("Errors Exist")
-
-    # Print contents to console
-    with open(os.path.join(dirHomeFolder, "_Error.log")) as f:
-        print(f.read())
-
+del nCores
 
 stop = time.time()
 print(str(round(stop - start) / 60) + " minutes to complete.")
