@@ -10,8 +10,7 @@ Date:    2020.12.10
 """
 Notes:
   There are some sleep calls. These were added during the workflow 
-    construction to view suspect outputs from the lastools. I do not believe
-    they are still needed.
+    to aid in debugging. I do not believe they are still needed.
   
   Run with LAZs and No FUSION Indexing
 """
@@ -43,7 +42,7 @@ project = "CO_ARRA_ParkCo_2010"
 print(project)
 
 # Directory of lidar data needing to be processed (e.g., external HHD)
-dirData = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
+dirLidarOriginal = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
 
 # FUSION directory
 dirFUSION = r"C:\Fusion"
@@ -98,17 +97,17 @@ dictSRS = {
 # -----------------------------------------------------------------------------
 
 # "parallel" functions are used with joblib
-def parallelProjectFunc(lidarFile, dirLAZ, dirLidar, srsIn):
+def parallelProjectFunc(lidarFile, dirLidarCopy, dirLAZ5070, srsIn):
     # Function used to project the laz files to EPSG 5070
     
     #File name of projected LAZ file
-    lasfile5070 = os.path.join(dirLidar, lidarFile[:-4]+".laz")
+    lasfile5070 = os.path.join(dirLAZ5070, lidarFile[:-4]+".laz")
 
     # pipepline depending if the CRS is defined
     if srsIn == None:
         # The SRS is in the lidar file
         reprojectPipeline = [
-            {"filename": os.path.join(dirLAZ, lidarFile), "type": "readers.las",},
+            {"filename": os.path.join(dirLidarCopy, lidarFile), "type": "readers.las",},
             {"type": "filters.reprojection", "out_srs": "EPSG:5070+5703",},
             {
                 "type": "writers.las",
@@ -126,7 +125,7 @@ def parallelProjectFunc(lidarFile, dirLAZ, dirLidar, srsIn):
         # Explicitly define SRS
         reprojectPipeline = [
             {
-                "filename": os.path.join(dirLAZ, lidarFile),
+                "filename": os.path.join(dirLidarCopy, lidarFile),
                 "type": "readers.las",
                 "spatialreference": "EPSG:" + str(srsIn),
             },
@@ -152,7 +151,7 @@ def parallelProjectFunc(lidarFile, dirLAZ, dirLidar, srsIn):
         pipeline.execute()
     except Exception as err:
         # Write and error file
-        fpErrorLog = os.path.join(dirLidar, "_Error.log")
+        fpErrorLog = os.path.join(dirLAZ5070, "_Error.log")
         cmdError1 = "echo " + "PDAL Reprojection Error " + " >> " + fpErrorLog
         cmdError2 = "echo " + "Check " + lidarFile + " >> " + fpErrorLog
         cmdError3 = "echo " + str(err) + " >> " + fpErrorLog
@@ -183,7 +182,7 @@ def calcNCores(x, nCoresMax):
 # -----------------------------------------------------------------------------
 
 # Lidar files to be processed
-lidarFiles = os.listdir(dirData)
+lidarFiles = os.listdir(dirLidarOriginal)
 lidarFiles.sort()
 
 
@@ -197,13 +196,13 @@ dirPoints = os.path.join(dirHomeFolder, "Points")
 if not os.path.exists(dirPoints):
     os.mkdir(dirPoints)
 
-dirLAZ = os.path.join(dirPoints, "LAZ")
-if not os.path.exists(dirLAZ):
-    os.mkdir(dirLAZ)
+dirLidarCopy = os.path.join(dirPoints, "LidarCopy")
+if not os.path.exists(dirLidarCopy):
+    os.mkdir(dirLidarCopy)
 
 for lidarFile in lidarFiles:
     shutil.copy(
-        src=os.path.join(dirData, lidarFile), dst=os.path.join(dirLAZ, lidarFile)
+        src=os.path.join(dirLidarOriginal, lidarFile), dst=os.path.join(dirLidarCopy, lidarFile)
     )
 del lidarFile
 
@@ -217,25 +216,25 @@ else:
     srsIn = None
 
 
-dirLidar = os.path.join(dirPoints, "LAZ5070")
-if not os.path.exists(dirLidar):
-    os.mkdir(dirLidar)
+dirLAZ5070 = os.path.join(dirPoints, "LAZ5070")
+if not os.path.exists(dirLAZ5070):
+    os.mkdir(dirLAZ5070)
 
 nCores = calcNCores(lidarFiles, nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelProjectFunc)(lidarFile, dirLAZ, dirLidar, srsIn)
+    delayed(parallelProjectFunc)(lidarFile, dirLidarCopy, dirLAZ5070, srsIn)
     for lidarFile in lidarFiles
 )
 del nCores
 
-# remove the copy of original LAZs
-shutil.rmtree(dirLAZ)
+# remove the copy of Lidar files
+shutil.rmtree(dirLidarCopy)
 
 # Move the Error log
-if os.path.exists(os.path.join(dirLidar, "_Error.log")):
+if os.path.exists(os.path.join(dirLAZ5070, "_Error.log")):
     # Move the error log
     shutil.move(
-        os.path.join(dirLidar, "_Error.log"), os.path.join(dirHomeFolder, "_Error.log"),
+        os.path.join(dirLAZ5070, "_Error.log"), os.path.join(dirHomeFolder, "_Error.log"),
     )
 
 
@@ -252,18 +251,17 @@ if not os.path.exists(dirQAQC):
 
 
 # Text file of lidar file paths
-lidarFiles5070 = os.listdir(dirLidar)
+lidarFiles5070 = os.listdir(dirLAZ5070)
 fpLidarFilePaths = os.path.join(dirQAQC, "lidarFiles.txt")
 with open(fpLidarFilePaths, "w") as f:
     for lidarFile in lidarFiles5070:
-        f.write(os.path.join(dirLidar, lidarFile))
+        f.write(os.path.join(dirLAZ5070, lidarFile))
         f.write("\n")
 del lidarFile
 
 
 # Run Catalog
 exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
-lidarFilePaths = [os.path.join(dirLidar, e) for e in lidarFiles]
 
 fpQAQCOut = os.path.join(dirQAQC, "QAQC.csv")
 cmdCatalog = (
