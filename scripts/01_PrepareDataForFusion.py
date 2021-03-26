@@ -74,20 +74,20 @@ if not os.path.exists(dirHomeFolder):
 
 # Spatial Reference Systems of different project areas
 dictSRS = {
-		"CO_CheesmanLake_2004": 26913,
-		"CO_DenverDNC_2008": 26913,
-		"CO_Denver_2008": 26913,
-		"CO_ElPasoCoCentral_2018": "6428+8228",
-		"CO_FremontCo_2016": "6428+8228",
-		"CO_HuerfanoCo_2018": "6432+8228",
-		"CO_LarimerCo_GlenHaven_2013": "2231+8228",
-		"CO_LovelandE_2016": "6430+8228",
-		"CO_LovelandW_2016": "6430+8228",
-		"CO_MesaCo_QL2_2015": 6341,
-		"CO_PitkinCo_2016": "6428+8228",
-		"CO_RouttCo_2016": "6430+8228",
-		"WY_Casper_2010": "",
-		"WY_NRCS_LIDAR_2006": 26913,
+    "CO_CheesmanLake_2004": 26913,
+    "CO_DenverDNC_2008": 26913,
+    "CO_Denver_2008": 26913,
+    "CO_ElPasoCoCentral_2018": "6428+8228",
+    "CO_FremontCo_2016": "6428+8228",
+    "CO_HuerfanoCo_2018": "6432+8228",
+    "CO_LarimerCo_GlenHaven_2013": "2231+8228",
+    "CO_LovelandE_2016": "6430+8228",
+    "CO_LovelandW_2016": "6430+8228",
+    "CO_MesaCo_QL2_2015": 6341,
+    "CO_PitkinCo_2016": "6428+8228",
+    "CO_RouttCo_2016": "6430+8228",
+    "WY_Casper_2010": "",
+    "WY_NRCS_LIDAR_2006": 26913,
 }
 
 # -----------------------------------------------------------------------------
@@ -99,9 +99,9 @@ dictSRS = {
 # "parallel" functions are used with joblib
 def parallelProjectFunc(lidarFile, dirLidarCopy, dirLAZ5070, srsIn):
     # Function used to project the laz files to EPSG 5070
-    
-    #File name of projected LAZ file
-    lasfile5070 = os.path.join(dirLAZ5070, lidarFile[:-4]+".laz")
+
+    # File name of projected LAZ file
+    lasfile5070 = os.path.join(dirLAZ5070, lidarFile[:-4] + ".laz")
 
     # pipepline depending if the CRS is defined
     if srsIn == None:
@@ -182,8 +182,8 @@ def calcNCores(x, nCoresMax):
 # -----------------------------------------------------------------------------
 
 # Lidar files to be processed
-lidarFiles = os.listdir(dirLidarOriginal)
-lidarFiles.sort()
+lidarFilesOriginal = os.listdir(dirLidarOriginal)
+lidarFilesOriginal.sort()
 
 
 # ----------------------------------------------------------------------------
@@ -200,11 +200,13 @@ dirLidarCopy = os.path.join(dirPoints, "LidarCopy")
 if not os.path.exists(dirLidarCopy):
     os.mkdir(dirLidarCopy)
 
-for lidarFile in lidarFiles:
+for lidarFile in lidarFilesOriginal:
     shutil.copy(
-        src=os.path.join(dirLidarOriginal, lidarFile), dst=os.path.join(dirLidarCopy, lidarFile)
+        src=os.path.join(dirLidarOriginal, lidarFile),
+        dst=os.path.join(dirLidarCopy, lidarFile),
     )
 del lidarFile
+del lidarFilesOriginal
 
 
 # project to EPSG 5070
@@ -215,17 +217,20 @@ if srsNeedsDefining:
 else:
     srsIn = None
 
-
 dirLAZ5070 = os.path.join(dirPoints, "LAZ5070")
 if not os.path.exists(dirLAZ5070):
     os.mkdir(dirLAZ5070)
 
-nCores = calcNCores(lidarFiles, nCoresMax)
+lidarFilesCopy = os.listdir(dirLidarCopy)
+lidarFilesCopy.sort()
+
+nCores = calcNCores(lidarFilesCopy, nCoresMax)
 Parallel(n_jobs=nCores)(
     delayed(parallelProjectFunc)(lidarFile, dirLidarCopy, dirLAZ5070, srsIn)
-    for lidarFile in lidarFiles
+    for lidarFile in lidarFilesCopy
 )
 del nCores
+del lidarFilesCopy
 
 # remove the copy of Lidar files
 shutil.rmtree(dirLidarCopy)
@@ -234,7 +239,8 @@ shutil.rmtree(dirLidarCopy)
 if os.path.exists(os.path.join(dirLAZ5070, "_Error.log")):
     # Move the error log
     shutil.move(
-        os.path.join(dirLAZ5070, "_Error.log"), os.path.join(dirHomeFolder, "_Error.log"),
+        os.path.join(dirLAZ5070, "_Error.log"),
+        os.path.join(dirHomeFolder, "_Error.log"),
     )
 
 
@@ -249,16 +255,16 @@ dirQAQC = os.path.join(dirProductHome, "QAQC")
 if not os.path.exists(dirQAQC):
     os.mkdir(dirQAQC)
 
-
 # Text file of lidar file paths
 lidarFiles5070 = os.listdir(dirLAZ5070)
+lidarFiles5070.sort()
 fpLidarFilePaths = os.path.join(dirQAQC, "lidarFiles.txt")
 with open(fpLidarFilePaths, "w") as f:
     for lidarFile in lidarFiles5070:
         f.write(os.path.join(dirLAZ5070, lidarFile))
         f.write("\n")
 del lidarFile
-
+del lidarFiles5070
 
 # Run Catalog
 exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
@@ -300,6 +306,7 @@ if os.path.exists(os.path.join(dirHomeFolder, "_Error.log")):
     # Print contents to console
     with open(os.path.join(dirHomeFolder, "_Error.log")) as f:
         print(f.read())
+
 
 stop = time.time()
 print(str(round(stop - start) / 60) + " minutes to complete.")
