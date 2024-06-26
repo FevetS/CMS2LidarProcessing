@@ -6,8 +6,6 @@
 	"nCoresMax": 6,
 	"srsIn": null,
 	
-	
-	"SRS.Lidar": "+init=epsg:5070",
 	"CELLSIZE": 30,
 	"DIRSCRIPTS": "J:\\users\\stevenf\\code\\fork\\CMS2LidarProcessing\\scripts\\AP",
 	
