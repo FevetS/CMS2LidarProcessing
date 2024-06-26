@@ -21,6 +21,9 @@ import os
 import shutil
 import subprocess
 import time
+import json
+import sys
+from types import SimpleNamespace
 import rasterio as rio
 
 # from rasterio.plot import show
@@ -33,17 +36,16 @@ import numpy as np
 # -----------------------------------------------------------------------------
 start = time.time()
 
-# Assign a project
-project = "CO_ARRA_ParkCo_2010"
-print(project)
+# Load config data into namespace
+config_path = sys.argv[1]
+with open(config_path, 'r') as f:
+    config_dict = json.load(f)
+config = SimpleNamespace(**config_dict)
 
-# main output directory
-dirBase = r"D:\LidarProcessing"
+print(config.project)
 
-# directory where the final products should be saved
-dirFinalProducts = r"G:\FusionRuns"
-if not os.path.exists(dirFinalProducts):
-    os.mkdir(dirFinalProducts)
+if not os.path.exists(config.dirFinalProducts):
+    os.mkdir(config.dirFinalProducts)
 
 
 # -----------------------------------------------------------------------------
@@ -87,7 +89,7 @@ def cleanGrids(inFiles, outDir, fpElev):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # directory for the specific lidar project; HOME_FOLDER in FUSION scripts
-dirHomeFolder = os.path.join(dirBase, project)
+dirHomeFolder = os.path.join(config.dirBase, config.project)
 
 # Directory of FUSION products
 dirFusionProducts = os.path.join(dirHomeFolder, "Products")
@@ -98,7 +100,7 @@ cmdFusionMainBat = os.path.join(dirFusionProcessingAP, "APFusion.bat")
 # Put in a check to see if the script has run
 
 if not os.path.exists(os.path.join(dirFusionProducts, "complete.txt")):
-    print("Running FUSION for " + project)
+    print("Running FUSION for " + config.project)
     subprocess.run(cmdFusionMainBat, shell=True)
 
     while not os.path.exists(os.path.join(dirFusionProducts, "complete.txt")):
@@ -111,7 +113,7 @@ if not os.path.exists(os.path.join(dirFusionProducts, "complete.txt")):
 # -----------------------------------------------------------------------------
 
 # Project-specific directory for saved outputs
-dirOutProject = os.path.join(dirFinalProducts, project)
+dirOutProject = os.path.join(config.dirFinalProducts, config.project)
 if not os.path.exists(dirOutProject):
     os.mkdir(dirOutProject)
 

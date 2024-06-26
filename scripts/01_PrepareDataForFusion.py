@@ -22,11 +22,13 @@ Notes:
 # -----------------------------------------------------------------------------
 import os
 import shutil
-import pdal
+import sys
 import json
 import time
-from joblib import Parallel, delayed
 import subprocess
+import pdal
+from types import SimpleNamespace
+from joblib import Parallel, delayed
 
 
 # -----------------------------------------------------------------------------
@@ -36,59 +38,25 @@ import subprocess
 # -----------------------------------------------------------------------------
 start = time.time()
 
-# Assign a project
-project = "CO_ARRA_ParkCo_2010"
+# Load config data into namespace
+config_path = sys.argv[1]
+with open(config_path, 'r') as f:
+    config_dict = json.load(f)
+config = SimpleNamespace(**config_dict)
 
-print(project)
+print(config.project)
 
 # Directory of lidar data needing to be processed (e.g., external HHD)
-dirLidarOriginal = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
-
-# FUSION directory
-dirFUSION = r"C:\Fusion"
-
-# Maximum number of processing cores
-nCoresMax = 26
+dirLidarOriginal = os.path.join(config.dirInputBase, config.project, "Points", "LAZ")
 
 # main output directory
-dirBase = r"D:\LidarProcessing"
-if not os.path.exists(dirBase):
-    os.mkdir(dirBase)
+if not os.path.exists(config.dirBase):
+    os.mkdir(config.dirBase)
 
 # directory for the specific lidar project; HOME_FOLDER in FUSION scripts
-dirHomeFolder = os.path.join(dirBase, project)
+dirHomeFolder = os.path.join(config.dirBase, config.project)
 if not os.path.exists(dirHomeFolder):
     os.mkdir(dirHomeFolder)
-
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-# Assign Spatial Reference Systems
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-# PDAL can read SRS directly from the LAS file. Some of the older LAS files
-# do not have embeded SRS info. If you want to use the SRS in the lidar file,
-# then do not include the key:pair (studyArea:epgsCode) in the dictionary.
-# If the SRS is missing from the lidar file, or you want to be explicity,
-# include the SRS in the dictionary
-
-# Spatial Reference Systems of different project areas
-dictSRS = {
-    "CO_CheesmanLake_2004": 26913,
-    "CO_DenverDNC_2008": 26913,
-    "CO_Denver_2008": 26913,
-    "CO_ElPasoCoCentral_2018": "6428+8228",
-    "CO_FremontCo_2016": "6428+8228",
-    "CO_HuerfanoCo_2018": "6432+8228",
-    "CO_LarimerCo_GlenHaven_2013": "2231+8228",
-    "CO_LovelandE_2016": "6430+8228",
-    "CO_LovelandW_2016": "6430+8228",
-    "CO_MesaCo_QL2_2015": 6341,
-    "CO_PitkinCo_2016": "6428+8228",
-    "CO_RouttCo_2016": "6430+8228",
-    "WY_Casper_2010": "",
-    "WY_NRCS_LIDAR_2006": 26913,
-}
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -185,7 +153,6 @@ def calcNCores(x, nCoresMax):
 lidarFilesOriginal = os.listdir(dirLidarOriginal)
 lidarFilesOriginal.sort()
 
-
 # ----------------------------------------------------------------------------
 # Process Point Data
 # ----------------------------------------------------------------------------
@@ -211,11 +178,6 @@ del lidarFilesOriginal
 
 # project to EPSG 5070
 print("\tProjecting Lidar Files")
-srsNeedsDefining = project in dictSRS
-if srsNeedsDefining:
-    srsIn = dictSRS[project]
-else:
-    srsIn = None
 
 dirLAZ5070 = os.path.join(dirPoints, "LAZ5070")
 if not os.path.exists(dirLAZ5070):
@@ -224,9 +186,9 @@ if not os.path.exists(dirLAZ5070):
 lidarFilesCopy = os.listdir(dirLidarCopy)
 lidarFilesCopy.sort()
 
-nCores = calcNCores(lidarFilesCopy, nCoresMax)
+nCores = calcNCores(lidarFilesCopy, config.nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelProjectFunc)(lidarFile, dirLidarCopy, dirLAZ5070, srsIn)
+    delayed(parallelProjectFunc)(lidarFile, dirLidarCopy, dirLAZ5070, config.srsIn)
     for lidarFile in lidarFilesCopy
 )
 del nCores
@@ -267,7 +229,7 @@ del lidarFile
 del lidarFiles5070
 
 # Run Catalog
-exeCatalog = os.path.join(dirFUSION, "Catalog.exe")
+exeCatalog = os.path.join(config.dirFUSION, "Catalog.exe")
 
 fpQAQCOut = os.path.join(dirQAQC, "QAQC.csv")
 cmdCatalog = (

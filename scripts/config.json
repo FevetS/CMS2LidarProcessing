@@ -1,0 +1,16 @@
+{
+	"project": "CO_Aspen_2020",
+	"dirInputBase": "F:\\Lidar",
+	"dirFUSION": "C:\\Fusion",
+	"dirBase": "C:\\scratch\\LidarProcessing",
+	"nCoresMax": 6,
+	"srsIn": null,
+	
+	
+	"SRS.Lidar": "+init=epsg:5070",
+	"CELLSIZE": 30,
+	"DIRSCRIPTS": "J:\\users\\stevenf\\code\\fork\\CMS2LidarProcessing\\scripts\\AP",
+	
+	"dirFinalProducts": "C:\\scratch\\FusionRuns"
+}
+	

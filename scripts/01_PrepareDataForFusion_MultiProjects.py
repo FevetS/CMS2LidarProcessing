@@ -22,9 +22,10 @@ import shutil
 import pdal
 import json
 import time
-from joblib import Parallel, delayed
+import sys
 import subprocess
-
+from types import SimpleNamespace
+from joblib import Parallel, delayed
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -33,8 +34,11 @@ import subprocess
 # -----------------------------------------------------------------------------
 start = time.time()
 
-# Assign a project
-projects = ["CO_ARRA_ParkCo_2010", "CO_ARRA_GrandCo_2010"]
+# Load config data into namespace
+config_path = sys.argv[1]
+with open(config_path, 'r') as f:
+    config_dict = json.load(f)
+config = SimpleNamespace(**config_dict)
 
 
 # -----------------------------------------------------------------------------
@@ -50,22 +54,7 @@ projects = ["CO_ARRA_ParkCo_2010", "CO_ARRA_GrandCo_2010"]
 # include the SRS in the dictionary
 
 # Spatial Reference Systems of different project areas
-dictSRS = {
-    "CO_CheesmanLake_2004": 26913,
-    "CO_DenverDNC_2008": 26913,
-    "CO_Denver_2008": 26913,
-    "CO_ElPasoCoCentral_2018": "6428+8228",
-    "CO_FremontCo_2016": "6428+8228",
-    "CO_HuerfanoCo_2018": "6432+8228",
-    "CO_LarimerCo_GlenHaven_2013": "2231+8228",
-    "CO_LovelandE_2016": "6430+8228",
-    "CO_LovelandW_2016": "6430+8228",
-    "CO_MesaCo_QL2_2015": 6341,
-    "CO_PitkinCo_2016": "6428+8228",
-    "CO_RouttCo_2016": "6430+8228",
-    "WY_Casper_2010": "",
-    "WY_NRCS_LIDAR_2006": 26913,
-}
+dictSRS = dict(zip(config.project, config.srsIn))
 
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -194,28 +183,28 @@ def calcNCores(x, nCoresMax):
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
-for project in projects:
+for project in config.project:
     # -------------------------------------------------------------------------
     # Setup
     # -------------------------------------------------------------------------
     print(project)
 
     # Directory of lidar data needing to be processed (e.g., external HHD)
-    dirLidarOriginal = os.path.join(r"L:\Lidar", project, "Points", "LAZ")
+    dirLidarOriginal = os.path.join(config.dirInputBase, project, "Points", "LAZ")
 
     # FUSION directory
-    dirFUSION = r"C:\Fusion"
+#     dirFUSION = r"C:\Fusion"
 
     # Maximum number of processing cores
-    nCoresMax = 26
+#     nCoresMax = 26
 
     # main output directory
-    dirBase = r"D:\LidarProcessing"
-    if not os.path.exists(dirBase):
-        os.mkdir(dirBase)
+#     dirBase = r"D:\LidarProcessing"
+    if not os.path.exists(config.dirBase):
+        os.mkdir(config.dirBase)
 
     # directory for the specific lidar project; HOME_FOLDER in FUSION scripts
-    dirHomeFolder = os.path.join(dirBase, project)
+    dirHomeFolder = os.path.join(config.dirBase, project)
     if not os.path.exists(dirHomeFolder):
         os.mkdir(dirHomeFolder)
 
@@ -247,8 +236,7 @@ for project in projects:
 
     # project to EPSG 5070
     print("\tProjecting Lidar Files")
-    srsNeedsDefining = project in dictSRS
-    if srsNeedsDefining:
+    if config.srsIn:
         srsIn = dictSRS[project]
     else:
         srsIn = None
@@ -260,7 +248,7 @@ for project in projects:
     lidarFilesCopy = os.listdir(dirLidarCopy)
     lidarFilesCopy.sort()
 
-    nCores = calcNCores(lidarFilesCopy, nCoresMax)
+    nCores = calcNCores(lidarFilesCopy, config.nCoresMax)
     Parallel(n_jobs=nCores)(
         delayed(parallelProjectFunc)(lidarFile, dirLidarCopy, dirLAZ5070, srsIn)
         for lidarFile in lidarFilesCopy
@@ -310,9 +298,9 @@ for project in projects:
 # ----------------------------------------------------------------------------
 print("\nRunning FUSION Catalog\n")
 
-nCores = calcNCores(projects, nCoresMax)
+nCores = calcNCores(config.project, config.nCoresMax)
 Parallel(n_jobs=nCores)(
-    delayed(parallelRunQAQC)(project, dirBase, dirFUSION) for project in projects
+    delayed(parallelRunQAQC)(project, config.dirBase, config.dirFUSION) for project in config.project
 )
 del nCores
 

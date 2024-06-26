@@ -18,6 +18,7 @@ rm(list=ls())
 # ----------------------------------------------------------------------------
 
 library(rgdal)
+library(rjson)
 
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
@@ -25,29 +26,15 @@ library(rgdal)
 # ----------------------------------------------------------------------------
 # ----------------------------------------------------------------------------
 
-#Spatial reference system of lidar data (e.g., EPSG 5070)
+# Load variables from JSON
+args = commandArgs(trailingOnly=TRUE)
+config_path = args[1]
+config <- fromJSON(file=config_path)
+
 SRS.Lidar = CRS("+init=epsg:5070")
+CELLSIZE <- config$CELLSIZE
+DIR_LAZ5070 <- paste0(config$dirBase, "\\", config$project, "\\", "Points\\", "LAZ5070\\")
 
-#File path to Fusion Executuables
-dirFUSION <- "C:\\FUSION\\"
-
-#Lidar Project Name
-project <- "CO_ARRA_ParkCo_2010"
-
-#Raster resolution
-CELLSIZE <- 30
-
-#Maximum number of processing cores
-NCORESMAX <- 26
-
-#Working directory (same as dirWD in script 01_PrepareDataForFusion.py)
-DIR_BASE <- paste0("D:\\LidarProcessing\\")
-
-#Direcotry of lidar data
-DIR_LAZ5070 <- paste0(DIR_BASE, project, "\\", "Points\\", "LAZ5070\\")
-
-#Directory of AP scripts
-DIRSCRIPTS <- "C:\\Users\\pafekety\\Desktop\\CMS2LidarProcessing\\scripts\\AP" # Do not include the trailing \\
 
 
 # ----------------------------------------------------------------------------
@@ -113,7 +100,7 @@ RunDtmDescribe <- function(DtmDirectory, OutputDirectory, OutputName, ALL=TRUE, 
 	
 	#Run Fusion DTMDescribe
 	shell(
-		paste0(dirFUSION, "DTMDescribe.exe ", DtmFileTxt, " ", OutputDirectory, OutputName, "_Summary.csv")
+		paste0(config$dirFUSION, "\\DTMDescribe.exe ", DtmFileTxt, " ", OutputDirectory, OutputName, "_Summary.csv")
 		)
 }
 
@@ -387,6 +374,7 @@ writeSection6 <- function(DIR_LIDAR, ext = ""){
 getLidarExtent <- function(DIR_LIDAR, ext = ""){
 	
 	#file path for lidar files
+    print(DIR_LIDAR)
 	ext = toupper(ext)
 	if(!is.element(ext, c("LAS", "LAZ"))) stop ("ext must be LAS or LAZ")
 	if(ext == "LAS"){
@@ -767,11 +755,11 @@ writePRP <- function(PROJECT, LATITUDE, HOMEFOLDER, PROCESSINGHOME, DIRSCRIPTS,
 	
 	#Ground data
 	if(length(dir(DTMSPEC)) > 0){
-		writeSection7(DTMSPEC = DTMSPEC, PROCESSINGHOME = PROCESSINGHOME, dirFUSION = dirFUSION)
+		writeSection7(DTMSPEC = DTMSPEC, PROCESSINGHOME = PROCESSINGHOME, dirFUSION = config$dirFUSION)
 	}
 
 	#Density data
-	writeSection8(PRODUCTHOME = PRODUCTHOME, PROCESSINGHOME = PROCESSINGHOME, dirFUSION = dirFUSION)
+	writeSection8(PRODUCTHOME = PRODUCTHOME, PROCESSINGHOME = PROCESSINGHOME, dirFUSION = config$dirFUSION)
 	
 	#Mask Layers
 	writeSection9()
@@ -803,7 +791,7 @@ createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR
 	print(paste0("Creating PRP file for ", project));flush.console()	
 	
 	#These folders are following the LTK naming scheme from setup.bat
-	HOMEFOLDER <- paste0(DIR_BASE, project, '\\')
+	HOMEFOLDER <- paste0(DIR_BASE, "\\", project, '\\')
 	PROCESSINGHOME <- paste0(HOMEFOLDER, 'Processing\\AP\\')
 	DTMSPEC <- paste0(HOMEFOLDER, 'Deliverables\\DTM\\')
 	PRODUCTHOME <- paste0(HOMEFOLDER, "Products\\")
@@ -889,12 +877,12 @@ createPRP <- function(project, cellSize, nCores, DIR_BASE, DIRSCRIPTS, DIR_LIDAR
 # ----------------------------------------------------------------------------
 
 createPRP(
-  project = project, 
-  cellSize = CELLSIZE, 
-  nCores = NCORESMAX, 
-  DIR_BASE = DIR_BASE, 
-  DIRSCRIPTS = DIRSCRIPTS, 
+  project = config$project, 
+  cellSize = config$CELLSIZE, 
+  nCores = config$nCoresMax, 
+  DIR_BASE = config$dirBase, 
+  DIRSCRIPTS = config$DIRSCRIPTS, 
   DIR_LIDAR = DIR_LAZ5070, 
-  dirFUSION = dirFUSION
+  dirFUSION = config$dirFUSION
 )
 
