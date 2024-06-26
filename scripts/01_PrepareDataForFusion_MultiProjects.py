@@ -191,15 +191,7 @@ for project in config.project:
 
     # Directory of lidar data needing to be processed (e.g., external HHD)
     dirLidarOriginal = os.path.join(config.dirInputBase, project, "Points", "LAZ")
-
-    # FUSION directory
-#     dirFUSION = r"C:\Fusion"
-
-    # Maximum number of processing cores
-#     nCoresMax = 26
-
-    # main output directory
-#     dirBase = r"D:\LidarProcessing"
+  
     if not os.path.exists(config.dirBase):
         os.mkdir(config.dirBase)
 
